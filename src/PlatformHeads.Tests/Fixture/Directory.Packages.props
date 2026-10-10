@@ -1,0 +1,3 @@
+<Project>
+  <!-- Here so the fixture takes no central package versions from above wherever it is copied. -->
+</Project>

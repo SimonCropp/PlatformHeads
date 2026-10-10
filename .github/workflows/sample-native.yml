@@ -1,0 +1,48 @@
+name: Sample native
+
+# Calls build-native the way an app does, for the sample head in sample/native, so that a change
+# to the workflow, the CMake module or the build script is run for real before any app takes it:
+# the container build, both checks, and on request the pull request with the binaries.
+#
+# There is no Swift package here, so the macOS job is not exercised by this. An app's own run is
+# the first to run it.
+on:
+  push:
+    paths:
+      - 'cmake/**'
+      - 'native/**'
+      - 'sample/native/**'
+      - '.github/workflows/build-native.yml'
+      - '.github/workflows/sample-native.yml'
+  pull_request:
+    paths:
+      - 'cmake/**'
+      - 'native/**'
+      - 'sample/native/**'
+      - '.github/workflows/build-native.yml'
+      - '.github/workflows/sample-native.yml'
+  workflow_dispatch:
+    inputs:
+      propose:
+        description: 'Open a PR with the sample binaries'
+        type: boolean
+        default: false
+
+concurrency:
+  group: sample-native-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  native:
+    uses: ./.github/workflows/build-native.yml
+    permissions:
+      contents: write
+      pull-requests: write
+    with:
+      library: sample_ui
+      native-path: sample/native
+      linux-runtimes: sample/runtimes
+      # Only when asked. The sample's binaries are of no use to anyone, so they are not
+      # committed on every change, and proposing them is how that half of the workflow is tried.
+      propose: ${{ github.event_name == 'workflow_dispatch' && inputs.propose }}
+      pull-request-title: Rebuild sample native binaries

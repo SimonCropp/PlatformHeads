@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="../claude.md" />
+    <File Path="../readme.md" />
+    <File Path="../.github/workflows/build.yml" />
+    <File Path="../.github/workflows/build-native.yml" />
+    <File Path="../.github/workflows/sample-native.yml" />
+    <File Path="../cmake/PlatformHeads.cmake" />
+    <File Path="../native/build-linux.sh" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="../global.json" />
+  </Folder>
+  <Project Path="PlatformHeads/PlatformHeads.csproj" />
+  <Project Path="PlatformHeads.Tests/PlatformHeads.Tests.csproj" />
+</Solution>

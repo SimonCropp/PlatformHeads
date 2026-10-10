@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- As a package reference would import them, from wherever the test says they are. -->
+  <Import Project="$(PlatformHeadsBuild)PlatformHeads.props" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageId>Fixture.App</PackageId>
+    <Version>1.0.0</Version>
+    <PlatformHeadsPackagePath>heads</PlatformHeadsPackagePath>
+    <LinuxApphost Condition="'$(LinuxApphost)' == ''">App.Head</LinuxApphost>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PlatformHead Include="win-x64" Project="..\Head\Head.csproj" Apphost="App.Head.exe" />
+    <PlatformHead Include="linux-x64" Project="..\Head\Head.csproj" Apphost="$(LinuxApphost)" Native="true" />
+  </ItemGroup>
+
+  <Import Project="$(PlatformHeadsBuild)PlatformHeads.targets" />
+</Project>

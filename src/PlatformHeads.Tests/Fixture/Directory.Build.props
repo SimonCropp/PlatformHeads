@@ -1,0 +1,7 @@
+<Project>
+  <!-- Here so the fixture takes nothing from a Directory.Build.props above wherever it is copied. -->
+  <PropertyGroup>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+</Project>

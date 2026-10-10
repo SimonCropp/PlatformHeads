@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project>
+  <PropertyGroup>
+    <Version>0.1.0</Version>
+    <PackageTags>MSBuild, Native, Cross platform, Packaging</PackageTags>
+    <Description>The build and packaging half of an app with one head per platform: publishes a head for each runtime identifier and bundles them into one package.</Description>
+    <Nullable>enable</Nullable>
+    <LangVersion>preview</LangVersion>
+    <!-- The package ships no assembly yet. One that DiffEngine references will need a strong
+         name, since DiffEngine has one, and that is when this changes. -->
+    <SignAssembly>false</SignAssembly>
+    <ContinuousIntegrationBuild>false</ContinuousIntegrationBuild>
+    <NoWarn>CS1591;NU1608;NU1109</NoWarn>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <SuppressNETCoreSdkPreviewMessage>true</SuppressNETCoreSdkPreviewMessage>
+  </PropertyGroup>
+</Project>

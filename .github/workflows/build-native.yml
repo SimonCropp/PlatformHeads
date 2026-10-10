@@ -1,0 +1,326 @@
+name: Build native
+
+# Builds an app's native head for the four runtime identifiers that load one, checks what the
+# Linux libraries will need of the machine that loads them, and opens a pull request with the
+# binaries, to be committed beside the head. There is no Windows build: that head renders with
+# WinForms.
+#
+# Called from an app's own workflow, which decides when it runs:
+#
+#   jobs:
+#     native:
+#       uses: SimonCropp/PlatformHeads/.github/workflows/build-native.yml@<tag>
+#       permissions:
+#         contents: write
+#         pull-requests: write
+#       with:
+#         library: myapp_ui
+#         linux-runtimes: src/MyApp.Native/runtimes
+#         swift-package: native/swift
+#         mac-runtimes: src/MyApp.Native/runtimes
+#
+# The binaries are committed and not built during a normal build, so that a plain dotnet build
+# produces a shippable package on any machine and contributors never need a C++ toolchain.
+on:
+  workflow_call:
+    inputs:
+      library:
+        description: The library's bare name, such as myapp_ui. It is built as lib<name>.so and lib<name>.dylib.
+        type: string
+        required: true
+      native-path:
+        description: The folder of the CMake project the Linux library is built from.
+        type: string
+        default: native
+      linux-runtimes:
+        description: The runtimes folder of the head that loads the Linux library, where it is committed as <rid>/native/lib<name>.so.
+        type: string
+        required: true
+      swift-package:
+        description: The folder of the Swift package the macOS library is built from. Empty for an app with no macOS head.
+        type: string
+        default: ''
+      mac-runtimes:
+        description: The runtimes folder of the head that loads the macOS library.
+        type: string
+        default: ''
+      swift-test:
+        description: Whether to run the Swift package's tests.
+        type: boolean
+        default: false
+      glibc-floor:
+        description: The newest glibc symbol version the Linux library may need.
+        type: string
+        default: GLIBC_2.28
+      allowed-needed:
+        description: The libraries the Linux library may record as needed, separated by spaces.
+        type: string
+        default: >-
+          libc.so.6 libm.so.6 libdl.so.2 libpthread.so.0 librt.so.1 libstdc++.so.6 libgcc_s.so.1
+          libX11.so.6 libGL.so.1 ld-linux-x86-64.so.2 ld-linux-aarch64.so.1
+      propose:
+        description: Whether to open a pull request with the rebuilt binaries.
+        type: boolean
+        default: true
+      pull-request-title:
+        description: The title, and the commit message, of that pull request.
+        type: string
+        default: Rebuild native binaries
+
+jobs:
+  linux:
+    name: ${{ matrix.rid }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rid: linux-x64
+            os: ubuntu-24.04
+          - rid: linux-arm64
+            os: ubuntu-24.04-arm
+    env:
+      LIBRARY: ${{ inputs.library }}
+      NATIVE: ${{ inputs.native-path }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # In a manylinux_2_28 container and not on the runner, for its glibc 2.28, which is
+      # RHEL 8's: see the script. It is native/build-linux.sh, word for word, and a test holds
+      # the two together. Carried here because a called workflow runs in the caller's checkout,
+      # where that file is not, and cannot tell which tag of this repository it was called at
+      # to go and fetch it.
+      - name: Build
+        env:
+          BUILD_SCRIPT: |
+            #!/usr/bin/env bash
+            # Builds build/lib$LIBRARY.so from the CMake project in $NATIVE, inside a manylinux_2_28
+            # container, whose glibc 2.28 is the floor the library then needs. A library records the glibc
+            # symbol versions of the headers it was compiled against, and the loader refuses it anywhere
+            # older: built on an Ubuntu 24.04 runner a head's library needed GLIBC_2.38, and would not load
+            # on Ubuntu 22.04, Debian 12, or RHEL 8 or 9.
+            #
+            # This is what the build-native workflow runs. To run it by hand, from an app's repository root:
+            #
+            #   docker run --rm -v "$PWD:/src" -w /src -e LIBRARY=myapp_ui -e NATIVE=native \
+            #     "quay.io/pypa/manylinux_2_28_$(uname -m)" bash /path/to/build-linux.sh
+            set -euo pipefail
+
+            : "${LIBRARY:?LIBRARY is the bare name of the library, such as myapp_ui}"
+            NATIVE="${NATIVE:-native}"
+
+            # What raylib's bundled GLFW builds against, for both its X11 and Wayland backends.
+            dnf install -y \
+              git pkgconfig \
+              libX11-devel libXext-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel \
+              mesa-libGL-devel wayland-devel libxkbcommon-devel
+
+            # A head's CMakeLists needs CMake 3.24, newer than the distribution's own. The image carries
+            # current releases through pipx, so these are only installed where it does not.
+            export PATH="$HOME/.local/bin:$PATH"
+            for tool in cmake ninja; do
+              if ! command -v "$tool" > /dev/null 2>&1; then
+                pipx install "$tool"
+              fi
+            done
+
+            # LEGACY links libGL.so.1, which every GL driver ships. This distribution's CMake otherwise
+            # prefers the GLVND split and links libOpenGL.so.0, which a machine with only libgl1 lacks.
+            cmake -S "$NATIVE" -B build -G Ninja -DCMAKE_BUILD_TYPE=Release -DOpenGL_GL_PREFERENCE=LEGACY
+            cmake --build build --config Release
+
+            # Here and not in the workflow's collect step: the build directory belongs to this container's
+            # root, and the runner cannot rewrite what is in it.
+            strip "build/lib$LIBRARY.so"
+        run: docker run --rm -v "$PWD:/src" -w /src -e LIBRARY -e NATIVE "quay.io/pypa/manylinux_2_28_$(uname -m)" bash -c "$BUILD_SCRIPT"
+
+      # The floor the container is there to hold, checked and not trusted, since nothing else
+      # would notice until a user on an older distribution did.
+      - name: Check glibc floor
+        env:
+          GLIBC_FLOOR: ${{ inputs.glibc-floor }}
+        run: |
+          highest=$(objdump -T "build/lib$LIBRARY.so" | grep -o 'GLIBC_[0-9][0-9.]*' | sort -uV | tail -n 1)
+          echo "Highest glibc symbol version required: $highest"
+          if [ "$(printf '%s\n' "$GLIBC_FLOOR" "$highest" | sort -V | tail -n 1)" != "$GLIBC_FLOOR" ]; then
+            echo "::error::lib$LIBRARY.so requires $highest, above the $GLIBC_FLOOR floor"
+            exit 1
+          fi
+          # libGL.so.1 is on every machine with a GL driver; libOpenGL.so.0 is not
+          if objdump -p "build/lib$LIBRARY.so" | grep -q 'NEEDED.*libOpenGL'; then
+            echo "::error::lib$LIBRARY.so links libOpenGL.so.0 and not libGL.so.1"
+            exit 1
+          fi
+
+      # Everything recorded as needed has to be on a machine for the library to load at all, so
+      # the list is held to what any machine that runs .NET and has a display already has. The
+      # container's linker records every library it is handed, used or not, and raylib hands on
+      # libSM and libICE, which a stock Ubuntu lacks. cmake/PlatformHeads.cmake links with
+      # --as-needed so that neither is recorded, and this is what notices the list growing by
+      # any other route.
+      - name: Check needed libraries
+        env:
+          ALLOWED: ${{ inputs.allowed-needed }}
+        run: |
+          needed=$(objdump -p "build/lib$LIBRARY.so" | awk '$1 == "NEEDED" { print $2 }')
+          echo "Needed:" $needed
+          failed=0
+          for library in $needed; do
+            case " $ALLOWED " in
+              *" $library "*) ;;
+              *)
+                echo "::error::lib$LIBRARY.so needs $library, which is not in the list of libraries it may need"
+                failed=1
+                ;;
+            esac
+          done
+          exit $failed
+
+      # Laid out as it is in the repository, so the propose job can merge every artifact
+      # straight into the checkout. Already stripped, inside the container that owns the build
+      # directory.
+      - name: Collect
+        env:
+          RUNTIMES: ${{ inputs.linux-runtimes }}
+        run: |
+          mkdir -p "artifacts/$RUNTIMES/${{ matrix.rid }}/native"
+          cp "build/lib$LIBRARY.so" "artifacts/$RUNTIMES/${{ matrix.rid }}/native/"
+          ls -lhR artifacts
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-${{ matrix.rid }}
+          path: artifacts/
+          retention-days: 7
+
+  # macOS draws with AppKit and not raylib and ImGui, so it is a Swift package and not a CMake
+  # project. One universal binary covers both macOS runtime identifiers and is copied into each.
+  macos:
+    name: osx
+    if: inputs.swift-package != ''
+    runs-on: macos-14
+    timeout-minutes: 45
+    env:
+      LIBRARY: ${{ inputs.library }}
+      PACKAGE: ${{ inputs.swift-package }}
+      RUNTIMES: ${{ inputs.mac-runtimes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # Both --arch flags in one invocation produce a universal binary. Nothing of the Swift
+      # runtime is shipped: it has been part of macOS since 10.14.4.
+      - name: Build
+        run: swift build -c release --arch arm64 --arch x86_64 --package-path "$PACKAGE"
+
+      # A scratch path of its own, because a test build is debug and for this machine's
+      # architecture alone: left in .build its dylib would be among the candidates the collect
+      # step merges.
+      - name: Test
+        if: inputs.swift-test
+        run: swift test --package-path "$PACKAGE" --scratch-path "$PACKAGE/.build-tests"
+
+      - name: Collect
+        run: |
+          # swift build leaves a dylib for each architecture in more than one place, so taking
+          # the first one found gives a single slice binary that loads on half the Macs in the
+          # world. Every candidate is checked, and if none is already universal they are merged,
+          # so the only thing that can be collected is a fat binary. The dSYM holds a DWARF file
+          # of the same name which is also universal, so it is left out by path.
+          candidates=$(find "$PACKAGE/.build" -name "lib$LIBRARY.dylib" -not -path '*.dSYM/*')
+          if [ -z "$candidates" ]; then
+            echo "::error::swift build produced no lib$LIBRARY.dylib"
+            exit 1
+          fi
+
+          dylib=""
+          for candidate in $candidates; do
+            archs=$(lipo -archs "$candidate" 2>/dev/null || echo "")
+            if [[ "$archs" == *x86_64* && "$archs" == *arm64* ]]; then
+              dylib="$candidate"
+              break
+            fi
+          done
+
+          if [ -z "$dylib" ]; then
+            dylib="universal/lib$LIBRARY.dylib"
+            mkdir -p universal
+            # shellcheck disable=SC2086
+            lipo -create $candidates -output "$dylib"
+          fi
+
+          archs=$(lipo -archs "$dylib")
+          echo "collecting $dylib: $archs"
+          for arch in x86_64 arm64; do
+            case " $archs " in
+              *" $arch "*) ;;
+              *) echo "::error::$dylib is missing the $arch slice"; exit 1 ;;
+            esac
+          done
+
+          strip -x "$dylib"
+          for rid in osx-x64 osx-arm64; do
+            mkdir -p "artifacts/$RUNTIMES/$rid/native"
+            cp "$dylib" "artifacts/$RUNTIMES/$rid/native/"
+          done
+          ls -lhR artifacts
+
+      - name: Upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: native-osx
+          path: artifacts/
+          retention-days: 7
+
+  propose:
+    name: propose update
+    needs: [linux, macos]
+    # Branches only. Never on pull_request, which would mean opening a pull request from one,
+    # and never on a tag: a tag checkout is a detached HEAD with no base branch to target.
+    # A macOS job that was skipped, for an app with no macOS head, is not one that failed.
+    if: >-
+      !cancelled() &&
+      needs.linux.result == 'success' &&
+      (needs.macos.result == 'success' || needs.macos.result == 'skipped') &&
+      inputs.propose &&
+      github.event_name != 'pull_request' &&
+      startsWith(github.ref, 'refs/heads/')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Download
+        uses: actions/download-artifact@v8
+        with:
+          pattern: native-*
+          merge-multiple: true
+          path: .
+
+      - name: Show what changed
+        run: git status --short
+
+      # A pull request and not a direct push: these are binaries, so the diff cannot be
+      # reviewed and the change deserves an explicit approval. Its branch is named for the
+      # branch that triggered it, which is also its base, so a rebuild on a feature branch does
+      # not collide with one on main.
+      - name: Open pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          branch: native-binaries-${{ github.ref_name }}
+          title: ${{ inputs.pull-request-title }}
+          commit-message: ${{ inputs.pull-request-title }}
+          body: |
+            Rebuilt `${{ inputs.library }}` from `${{ inputs.native-path }}` for the runtime identifiers that load one.
+            Windows is not among them: that head renders with WinForms.
+
+            Produced by the `build-native` workflow from ${{ github.sha }}.
+          add-paths: |
+            ${{ inputs.linux-runtimes }}
+            ${{ inputs.mac-runtimes }}

@@ -1,0 +1,141 @@
+<Project>
+  <!--
+  Two things, for the two kinds of project an app with a head per platform has.
+
+  The project that ships the app lists its heads and where they go in its package:
+
+    <ItemGroup>
+      <PlatformHead Include="win-x64" Project="..\App.Windows\App.Windows.csproj" Apphost="App.exe" />
+      <PlatformHead Include="linux-x64" Project="..\App.Native\App.Native.csproj" Apphost="App" Native="true" />
+    </ItemGroup>
+    <PropertyGroup>
+      <PlatformHeadsPackagePath>tools\$(TargetFramework)\any\heads</PlatformHeadsPackagePath>
+    </PropertyGroup>
+
+  A head whose renderer is a native library committed under runtimes\{rid}\native sets
+  PlatformHeadsNativeRuntimes to true.
+  -->
+
+  <PropertyGroup>
+    <!-- Absolute: it is handed to each head's publish, where a relative path would resolve
+         against the head's directory and not this one. -->
+    <PlatformHeadsStageDir Condition="'$(PlatformHeadsStageDir)' == ''">$(MSBuildProjectDirectory)\obj\heads\</PlatformHeadsStageDir>
+    <!--
+    Whenever the project is packed, with nothing to turn it off. Hung off a property that some
+    way of packing did not set, a package is put together with no heads in it and nothing is
+    reported: DiffEngine shipped a beta that way, at a third of its size.
+    -->
+    <GenerateNuspecDependsOn>PlatformHeadsAddToPackage;$(GenerateNuspecDependsOn)</GenerateNuspecDependsOn>
+  </PropertyGroup>
+
+  <!--
+  A head's native libraries, prebuilt and committed so that a plain dotnet build produces a
+  package that works, and carried into the publish output by CopyToOutputDirectory. A build for
+  no runtime identifier carries every one, for the head to choose between when it loads. A
+  publish for one carries only its own, or each bundled copy drags in all the others.
+  -->
+  <ItemGroup Condition="'$(PlatformHeadsNativeRuntimes)' == 'true' And '$(RuntimeIdentifier)' == ''">
+    <None Include="runtimes\**\*" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PlatformHeadsNativeRuntimes)' == 'true' And '$(RuntimeIdentifier)' != ''">
+    <None Include="runtimes\$(RuntimeIdentifier)\**\*"
+          CopyToOutputDirectory="PreserveNewest"
+          Link="runtimes\$(RuntimeIdentifier)\%(RecursiveDir)%(Filename)%(Extension)" />
+  </ItemGroup>
+
+  <!--
+  One framework dependent publish for each runtime identifier, which gives a real apphost for
+  each platform and nothing to resolve a dotnet host with at launch.
+  -->
+  <Target Name="PlatformHeadsPublish" Condition="'@(PlatformHead)' != ''">
+    <ItemGroup>
+      <_PlatformHeadWithoutProject Include="@(PlatformHead)" Condition="'%(PlatformHead.Project)' == '' Or !Exists('%(PlatformHead.Project)')" />
+      <_PlatformHeadWithoutApphost Include="@(PlatformHead)" Condition="'%(PlatformHead.Apphost)' == ''" />
+    </ItemGroup>
+    <Error Condition="'@(_PlatformHeadWithoutProject)' != ''"
+           Code="PH0003"
+           Text="No head project was found for: @(_PlatformHeadWithoutProject, ', '). Each PlatformHead names one in its Project metadata." />
+    <Error Condition="'@(_PlatformHeadWithoutApphost)' != ''"
+           Code="PH0004"
+           Text="No Apphost is named for: @(_PlatformHeadWithoutApphost, ', '). It is the executable the head's publish produces, and what is looked for to tell that it did." />
+
+    <!--
+    Turned round, so the item is the head's project and its runtime identifier is metadata: an
+    item that is a path knows its own full path and directory, which a property function handed
+    item metadata does not, since it is evaluated before the metadata is.
+    -->
+    <ItemGroup>
+      <_PlatformHead Include="%(PlatformHead.Project)"
+                     Rid="%(PlatformHead.Identity)"
+                     Apphost="%(PlatformHead.Apphost)"
+                     Native="%(PlatformHead.Native)" />
+    </ItemGroup>
+
+    <RemoveDir Directories="$(PlatformHeadsStageDir)" />
+    <Warning Condition="'%(_PlatformHead.Native)' == 'true' And !Exists('%(_PlatformHead.RootDir)%(_PlatformHead.Directory)runtimes\%(_PlatformHead.Rid)\native')"
+             Code="PH0001"
+             Text="No native renderer for %(_PlatformHead.Rid). The package will not work on that platform. Run the build-native workflow." />
+    <!--
+    A separate process for each, not the MSBuild task. Each publish needs a restore of its own,
+    and a restore and a publish in one invocation do not see each other's results, because the
+    evaluated project is cached.
+
+    GeneratePackageOnBuild is switched off for them. ProjectDefaults turns it on for every
+    Release project, so each publish would otherwise also pack its head.
+    -->
+    <Exec Command="dotnet publish &quot;%(_PlatformHead.FullPath)&quot; --configuration $(Configuration) --runtime %(_PlatformHead.Rid) --self-contained false --output &quot;$(PlatformHeadsStageDir)%(_PlatformHead.Rid)&quot; -p:GeneratePackageOnBuild=false"
+          StandardOutputImportance="low" />
+
+    <!--
+    A publish that produced nothing is caught here and not by whoever installs the package. For
+    each runtime identifier, and by the apphost and not by a count of files, because five out
+    of six is the same hole as none: the platform that missed out has nothing to start.
+    -->
+    <ItemGroup>
+      <_PlatformHeadNotStaged Include="@(PlatformHead)"
+                              Condition="!Exists('$(PlatformHeadsStageDir)%(PlatformHead.Identity)\%(PlatformHead.Apphost)')" />
+    </ItemGroup>
+    <Error Condition="'@(_PlatformHeadNotStaged)' != ''"
+           Code="PH0002"
+           Text="No apphost was staged for: @(_PlatformHeadNotStaged, ', '). Packing now would ship a package with nothing to start on those platforms." />
+  </Target>
+
+  <!--
+  Also beside the build output, where PlatformHeadsOutputPath names somewhere, so that a build
+  run from bin finds a head the way an installed package does.
+  -->
+  <Target Name="PlatformHeadsCopyToOutput"
+          AfterTargets="Build"
+          DependsOnTargets="PlatformHeadsPublish"
+          Condition="'@(PlatformHead)' != '' And '$(PlatformHeadsOutputPath)' != ''">
+    <ItemGroup>
+      <_PlatformHeadOutputFile Include="$(PlatformHeadsStageDir)**\*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_PlatformHeadOutputFile)"
+          DestinationFiles="@(_PlatformHeadOutputFile->'$(OutDir)$(PlatformHeadsOutputPath)\%(RecursiveDir)%(Filename)%(Extension)')"
+          SkipUnchangedFiles="true" />
+  </Target>
+
+  <Target Name="PlatformHeadsAddToPackage"
+          DependsOnTargets="PlatformHeadsPublish"
+          Condition="'@(PlatformHead)' != ''">
+    <Error Condition="'$(PlatformHeadsPackagePath)' == ''"
+           Code="PH0005"
+           Text="PlatformHeadsPackagePath is not set. It is the folder of the package the heads go in, each under its runtime identifier." />
+    <ItemGroup>
+      <_PlatformHeadPackageFile Include="$(PlatformHeadsStageDir)**\*" />
+      <!--
+      Package files for no one framework: a project with several frameworks would otherwise add
+      the heads once for each.
+
+      Just the root. NuGet appends each file's path relative to the wildcard, so repeating
+      RecursiveDir doubles it, and naming the file breaks the Linux and macOS apphosts, which
+      have no extension and which NuGet then reads as a folder.
+      -->
+      <_PackageFiles Include="@(_PlatformHeadPackageFile)"
+                     BuildAction="None"
+                     PackagePath="$(PlatformHeadsPackagePath)" />
+    </ItemGroup>
+  </Target>
+</Project>

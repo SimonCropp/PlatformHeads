@@ -1,0 +1,13 @@
+<Project>
+  <!--
+  A PlatformHead is named by a runtime identifier, not a path, and an item whose Include is not a
+  path shows in an IDE's project tree as a missing file. Native is false unless a head says its
+  renderer is a native library, which is what PH0001 looks for.
+  -->
+  <ItemDefinitionGroup>
+    <PlatformHead>
+      <Visible>false</Visible>
+      <Native>false</Native>
+    </PlatformHead>
+  </ItemDefinitionGroup>
+</Project>

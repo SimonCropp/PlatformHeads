@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- Nothing is compiled. The package is its build folder, and the framework is only there
+         because a project has to name one. -->
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <DevelopmentDependency>true</DevelopmentDependency>
+    <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <!-- NU5128: a package with a build folder and no lib folder, which is what this is. -->
+    <NoWarn>$(NoWarn);NU5128</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <!--
+    Twice. A project with one target framework imports build, and one with several imports
+    buildMultiTargeting into the outer build, which is the build that packs: DiffEngine has eight
+    frameworks, and with build alone its package would be put together with no heads in it.
+    -->
+    <None Include="build\PlatformHeads.props;build\PlatformHeads.targets" Pack="true" PackagePath="build\" />
+    <None Include="build\PlatformHeads.props;build\PlatformHeads.targets" Pack="true" PackagePath="buildMultiTargeting\" />
+  </ItemGroup>
+</Project>
