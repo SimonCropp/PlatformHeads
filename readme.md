@@ -80,4 +80,4 @@ docker run --rm -v "$PWD:/src" -w /src -e LIBRARY=myapp_ui -e NATIVE=native "qua
 
 ## Icon
 
-A placeholder.
+https://thenounproject.com/icon/crash-test-dummy-2523803/
