@@ -22,6 +22,21 @@ The `PlatformHeads.Core` NuGet package, in the `PlatformHeads` namespace. It is 
 The assembly is signed, since DiffEngine's are.
 
 
+## The WinForms shell
+
+The `PlatformHeads.WindowsForms` NuGet package, for the Windows head. `HeadForm` is the form the head draws in, pumped by the app's loop with `Application.DoEvents` rather than `Application.Run`:
+
+ * It opens where it was left, moved onto a display that can show it (`WindowFit.Restorable`), or at its first size scaled to the display and centred for it.
+ * It says where it is (`Placement`, or `TakeSettled` for an app that saves as the window settles), with a maximised window remembered as maximised through a minimise, and `Raise` and `ShowRestored` bring it back that way.
+ * Closing it is a request the app answers (`TakeCloseRequest`, `CloseForReal`), except at shutdown and End Task, and `SessionEnding` runs before Windows can end the process.
+ * `WaitForFrame` is the head's `IHeadWindow.Wait`: it idles on the message queue and the loop's wake together (`MessageWait`), a frame at most while something on it animates, and not at all while input is already waiting.
+ * `ModalFrame` keeps frames coming while user32 holds the thread in its own loop, for a move or a resize, or whatever a subclass enters with `EnterModal`.
+
+`FormsApp.Configure` is the process wide setup, once, and `FormsClipboard.Set` the clipboard half of `SetClipboard`.
+
+The head is `net10.0`, not `net10.0-windows`, since it is published per runtime identifier from a platform neutral package, and names WinForms itself with `UseWindowsForms` and the usual workaround for the SDK's check of it. So the package does not declare the WinForms framework reference: declared by a package, the SDK refuses a `net10.0` project that takes it (NETSDK1136).
+
+
 ## The MSBuild targets
 
 The `PlatformHeads` NuGet package. The project that ships the app lists its heads, and packing it publishes each for its runtime identifier and bundles them:

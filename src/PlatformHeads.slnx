@@ -1,4 +1,9 @@
 <Solution>
+  <Configurations>
+    <BuildType Name="Debug" />
+    <BuildType Name="Release" />
+    <BuildType Name="Release-NotWindows" />
+  </Configurations>
   <Folder Name="/Solution Items/">
     <File Path="../claude.md" />
     <File Path="../readme.md" />
@@ -11,7 +16,22 @@
     <File Path="Directory.Packages.props" />
     <File Path="../global.json" />
   </Folder>
-  <Project Path="PlatformHeads/PlatformHeads.csproj" />
-  <Project Path="PlatformHeads.Core/PlatformHeads.Core.csproj" />
-  <Project Path="PlatformHeads.Tests/PlatformHeads.Tests.csproj" />
+  <Project Path="PlatformHeads/PlatformHeads.csproj">
+    <BuildType Solution="Release-NotWindows|*" Project="Release" />
+  </Project>
+  <Project Path="PlatformHeads.Core/PlatformHeads.Core.csproj">
+    <BuildType Solution="Release-NotWindows|*" Project="Release" />
+  </Project>
+  <Project Path="PlatformHeads.WindowsForms/PlatformHeads.WindowsForms.csproj">
+    <!-- Builds everywhere, as the heads that reference it do. It only runs on Windows. -->
+    <BuildType Solution="Release-NotWindows|*" Project="Release" />
+  </Project>
+  <Project Path="PlatformHeads.Tests/PlatformHeads.Tests.csproj">
+    <BuildType Solution="Release-NotWindows|*" Project="Release" />
+  </Project>
+  <Project Path="PlatformHeads.WindowsForms.Tests/PlatformHeads.WindowsForms.Tests.csproj">
+    <BuildType Solution="Release-NotWindows|*" Project="Release" />
+    <!-- Targets net10.0-windows and opens real windows, so it neither builds nor runs off Windows. -->
+    <Build Solution="Release-NotWindows|*" Project="false" />
+  </Project>
 </Solution>

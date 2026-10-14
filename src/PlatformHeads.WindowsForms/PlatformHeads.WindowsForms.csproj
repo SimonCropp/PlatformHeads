@@ -1,0 +1,54 @@
+<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <!--
+    net10.0 and not net10.0-windows, as the heads that reference it are: each is published per RID
+    from a platform neutral package, and a platform locked reference would lock it too. So it claims
+    the Windows platform only for the check that refuses UseWindowsForms on a platform neutral
+    framework, and puts it back, as the heads do.
+    -->
+    <TargetFramework>net10.0</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <NoWarn>$(NoWarn);NETSDK1137;CA1416</NoWarn>
+    <!-- So it builds on the Linux runner, which publishes the Windows heads too. -->
+    <EnableWindowsTargeting>true</EnableWindowsTargeting>
+    <!-- For the LibraryImport of MessageWait, whose generated marshalling pins the handle. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <PackageTags>Cross platform, UI, WinForms, Windows Forms</PackageTags>
+    <Description>The WinForms shell of an app with one head per platform: a form pumped by the app's own frame loop, which idles on the message queue, hides rather than closes, opens where it was left, and keeps frames coming inside user32's modal loops.</Description>
+  </PropertyGroup>
+
+  <Target Name="RemoveTargetPlatformIdentifier" BeforeTargets="_CheckForInvalidWindowsDesktopTargetingConfiguration">
+    <PropertyGroup>
+      <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
+    </PropertyGroup>
+  </Target>
+  <Target Name="RestoreTargetPlatformIdentifier" AfterTargets="_CheckForInvalidWindowsDesktopTargetingConfiguration">
+    <PropertyGroup>
+      <TargetPlatformIdentifier></TargetPlatformIdentifier>
+    </PropertyGroup>
+  </Target>
+
+  <ItemGroup>
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <ProjectReference Include="..\PlatformHeads.Core\PlatformHeads.Core.csproj" />
+    <Using Include="System.ComponentModel" />
+    <Using Include="System.Diagnostics" />
+    <Using Include="System.Drawing" />
+    <Using Include="System.Runtime.InteropServices" />
+    <Using Include="System.Windows.Forms" />
+  </ItemGroup>
+
+  <!--
+  The WinForms framework reference stays out of the package. A head that takes it is net10.0 and
+  not net10.0-windows, and the SDK refuses such a project once a package brings it that reference
+  (NETSDK1136, from _CheckForTransitiveWindowsDesktopDependencies), though the head names the
+  framework itself by UseWindowsForms, as it has to in order to use this at all. Marked here rather
+  than with the project's items, because the SDK adds the reference after them.
+  -->
+  <Target Name="KeepWindowsFormsOutOfThePackage" BeforeTargets="CollectFrameworkReferences">
+    <ItemGroup>
+      <FrameworkReference Update="Microsoft.WindowsDesktop.App.WindowsForms" PrivateAssets="all" />
+    </ItemGroup>
+  </Target>
+</Project>

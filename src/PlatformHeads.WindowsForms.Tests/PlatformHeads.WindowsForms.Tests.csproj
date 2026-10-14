@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <!-- Opens real windows, so it is Windows only: the Release-NotWindows build leaves it out. -->
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <NoWarn>$(NoWarn);CA1416;WFO1000</NoWarn>
+  </PropertyGroup>
+  <ItemGroup>
+    <Using Include="PlatformHeads" />
+    <Using Include="System.Diagnostics" />
+    <Using Include="System.Drawing" />
+    <Using Include="System.Windows.Forms" />
+    <ProjectReference Include="..\PlatformHeads.WindowsForms\PlatformHeads.WindowsForms.csproj" />
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <PackageReference Include="TUnit" />
+    <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
+  </ItemGroup>
+</Project>

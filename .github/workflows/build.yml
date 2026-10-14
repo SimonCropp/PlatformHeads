@@ -46,13 +46,19 @@ jobs:
         shell: bash
         run: echo "VERSION_ARGUMENT=-p:Version=${GITHUB_REF_NAME#v}" >> "$GITHUB_ENV"
 
+      # Off Windows the solution is built as Release-NotWindows, which leaves out the WinForms tests:
+      # they open real windows. Every other project is still built as Release.
+      - name: Choose the configuration
+        shell: bash
+        run: echo "CONFIGURATION=${{ runner.os == 'Windows' && 'Release' || 'Release-NotWindows' }}" >> "$GITHUB_ENV"
+
       # A plain build is also the pack step: ProjectDefaults sets GeneratePackageOnBuild for a
-      # Release package project, so this leaves the package in ./nugets.
+      # Release package project, so this leaves the packages in ./nugets.
       - name: Build
-        run: dotnet build src --configuration Release ${{ env.VERSION_ARGUMENT }}
+        run: dotnet build src/PlatformHeads.slnx --configuration ${{ env.CONFIGURATION }} ${{ env.VERSION_ARGUMENT }}
 
       - name: Test
-        run: dotnet test --solution src/PlatformHeads.slnx --configuration Release --no-build --no-restore
+        run: dotnet test --solution src/PlatformHeads.slnx --configuration ${{ env.CONFIGURATION }} --no-build --no-restore
 
       - name: Upload package
         if: runner.os == 'Windows'
