@@ -28,7 +28,9 @@ docker run --rm -v "$PWD:/src" -w /src -e LIBRARY=sample_ui -e NATIVE=sample/nat
 
 The shared half of the head architecture DiffEngineViewer (`D:\Code\VerifyTests\DiffEngine`) and BuildMonitor (`D:\Code\BuildMonitor`) both use: an immutable state projected into a `Screen`, drawn by a WinForms head on Windows and by a native library behind an app's own C ABI on macOS and Linux. Each app had its own copy of the plumbing, and fixes made in one did not reach the other. The plumbing moves here a layer at a time. What an app draws, and the structs of its ABI, stay in the app.
 
-Layer 1, which is what is here, is build and packaging, and ships in three forms an app pins at one tag:
+Layer 2 is the managed kernel, `src/PlatformHeads.Core`, packed as `PlatformHeads.Core`: `SessionHost<TState>`, `ScreenCache<TState, TScreen>`, `IHeadWindow<TScreen, TInput>` and `OpenWindow<TWindow>`, `Pacing` and `LoopWake<TState>`, `ClipboardPump`, `WindowPlacement`, `PlacementSettler` and `NativeResolver`. Each was a copy in both apps, or in BuildMonitor and missing from DiffEngine. The frame loop itself stays in each app, since most of it is the app's own. Unlike the apps' code it is in a namespace, `PlatformHeads`, and public, since it is a library; an app takes it with a global using. It is signed with the `key.snk` most of these repositories share, because DiffEngine is signed. The tests are in `src/PlatformHeads.Tests/Core`.
+
+Layer 1 is build and packaging, and ships in three forms an app pins at one tag:
 
 - `src/PlatformHeads/build/` is the NuGet package: MSBuild props and targets, no assembly. `PlatformHead` items name a head project for each runtime identifier, and packing publishes and bundles them. Packed into both `build` and `buildMultiTargeting`, since DiffEngine has several target frameworks and packs from its outer build.
 - `cmake/PlatformHeads.cmake` is fetched by an app's `native/CMakeLists.txt` with `FetchContent`. It pins raylib and Dear ImGui and carries the raylib 6.0 option workarounds and `--as-needed`. The repository root must never gain a `CMakeLists.txt`, or `FetchContent_MakeAvailable` would start building it.
@@ -48,4 +50,4 @@ A property function handed item metadata is evaluated before the metadata is, so
 
 ## Code style
 
-As BuildMonitor's: no namespaces, `var`, expression-bodied members, lambda parameters named `_`, no single-letter locals other than loop counters, no abbreviations, one type per file, and comments that say what failure a thing guards against.
+As BuildMonitor's, except that the kernel is in a namespace: `var`, expression-bodied members, lambda parameters named `_`, no single-letter locals other than loop counters, no abbreviations, one type per file, and comments that say what failure a thing guards against.

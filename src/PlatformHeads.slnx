@@ -12,5 +12,6 @@
     <File Path="../global.json" />
   </Folder>
   <Project Path="PlatformHeads/PlatformHeads.csproj" />
+  <Project Path="PlatformHeads.Core/PlatformHeads.Core.csproj" />
   <Project Path="PlatformHeads.Tests/PlatformHeads.Tests.csproj" />
 </Solution>

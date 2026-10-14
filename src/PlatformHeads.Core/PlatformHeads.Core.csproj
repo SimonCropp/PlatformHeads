@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageTags>Cross platform, UI, Native</PackageTags>
+    <Description>The managed kernel of an app with one head per platform: the host of its immutable state, the cache of the screen built from it, the contract a head's window keeps, the pacing of the frame loop, and the resolver for a head's native library.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <Using Include="System.Diagnostics.CodeAnalysis" />
+    <Using Include="System.Globalization" />
+    <Using Include="System.Reflection" />
+    <Using Include="System.Runtime.InteropServices" />
+  </ItemGroup>
+</Project>

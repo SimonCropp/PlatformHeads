@@ -4,7 +4,22 @@ The build and packaging half of a .NET app that has one head per platform: a Win
 
 [DiffEngine](https://github.com/VerifyTests/DiffEngine)'s viewer and [BuildMonitor](https://github.com/SimonCropp/BuildMonitor) are both built this way, and each had its own copy of everything here. A fix made to one copy did not reach the other, so this is the one copy.
 
-An app takes three things from it, all at the same tag.
+An app takes four things from it, all at the same tag: a library its loop is built from, and three for building and packaging the heads.
+
+
+## The kernel
+
+The `PlatformHeads.Core` NuGet package, in the `PlatformHeads` namespace. It is the managed plumbing every head's loop shares, and nothing an app draws:
+
+ * `SessionHost<TState>` holds the one mutable reference to an immutable state. Reads take no lock; mutations are serialised, a mutation that mutates again throws, and `Changed` is raised only for a new state.
+ * `ScreenCache<TState, TScreen>` builds a screen once per state, and once more each time the clock ticks over where the screen shows the time, so a head can stop at the reference when nothing changed.
+ * `IHeadWindow<TScreen, TInput>` is the contract a head's window keeps: present a whole screen, idle until woken, poll the input. An app's own window interface derives from it. `OpenWindow<TWindow>` opens one.
+ * `Pacing`, `LoopWake<TState>` and `ScreenCache.UntilTick` are how long a loop idles between frames and what wakes it.
+ * `ClipboardPump` offers a copy for a few frames, since a Windows clipboard another process holds refuses a set outright.
+ * `WindowPlacement` is where a window was left, and `PlacementSettler` decides when a native window that reports where it is on every poll has stopped moving.
+ * `NativeResolver` finds a head's native library under `runtimes/{rid}/native`, and never loads a glibc build into a musl process.
+
+The assembly is signed, since DiffEngine's are.
 
 
 ## The MSBuild targets

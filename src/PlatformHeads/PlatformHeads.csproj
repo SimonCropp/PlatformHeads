@@ -4,6 +4,8 @@
     <!-- Nothing is compiled. The package is its build folder, and the framework is only there
          because a project has to name one. -->
     <TargetFramework>netstandard2.0</TargetFramework>
+    <PackageTags>MSBuild, Native, Cross platform, Packaging</PackageTags>
+    <Description>The build and packaging half of an app with one head per platform: publishes a head for each runtime identifier and bundles them into one package.</Description>
     <IncludeBuildOutput>false</IncludeBuildOutput>
     <DevelopmentDependency>true</DevelopmentDependency>
     <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>

@@ -6,9 +6,15 @@
   </PropertyGroup>
   <ItemGroup>
     <Using Include="System.Diagnostics" />
+    <Using Include="System.Globalization" />
     <Using Include="System.IO.Compression" />
+    <Using Include="System.Reflection" />
     <Using Include="System.Runtime.CompilerServices" />
+    <Using Include="System.Runtime.InteropServices" />
+    <Using Include="System.Runtime.Loader" />
     <Using Include="System.Text" />
+    <Using Include="PlatformHeads" />
+    <ProjectReference Include="..\PlatformHeads.Core\PlatformHeads.Core.csproj" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
