@@ -18,6 +18,11 @@
 include_guard(GLOBAL)
 include(FetchContent)
 
+# The shared runtime beside this file, compiled into every head: see native/runtime. Kept in the
+# cache because a function reads it later, from whichever directory calls it.
+get_filename_component(PLATFORMHEADS_RUNTIME_DIR "${CMAKE_CURRENT_LIST_DIR}/../native/runtime" ABSOLUTE)
+set(PLATFORMHEADS_RUNTIME_DIR "${PLATFORMHEADS_RUNTIME_DIR}" CACHE INTERNAL "")
+
 # Pinned here, so every app that takes a tag of this file builds against the same two. Set
 # either before platformheads_fetch to try another.
 if(NOT DEFINED PLATFORMHEADS_RAYLIB_TAG)
@@ -125,24 +130,34 @@ function(platformheads_fetch)
 endfunction()
 
 #
-# The head's shared library: its own sources and Dear ImGui's, linked against raylib.
+# The head's shared library: its own sources, the shared runtime's and Dear ImGui's, linked
+# against raylib.
 #
 #   platformheads_add_library(<name> SOURCES <file>...)
 #
 # The name is the bare one the managed side probes for. It comes out as lib<name>.so,
-# lib<name>.dylib or <name>.dll.
+# lib<name>.dylib or <name>.dll. A head includes "platformheads/runtime.h" for the runtime.
 #
 function(platformheads_add_library name)
   cmake_parse_arguments(PARSE_ARGV 1 arg "" "" "SOURCES")
 
   add_library(${name} SHARED
     ${arg_SOURCES}
+    ${PLATFORMHEADS_RUNTIME_DIR}/src/runtime.cpp
+    ${PLATFORMHEADS_RUNTIME_DIR}/src/renderer.cpp
+    ${PLATFORMHEADS_RUNTIME_DIR}/src/fonts.cpp
+    ${PLATFORMHEADS_RUNTIME_DIR}/src/text.cpp
     ${imgui_SOURCE_DIR}/imgui.cpp
     ${imgui_SOURCE_DIR}/imgui_draw.cpp
     ${imgui_SOURCE_DIR}/imgui_tables.cpp
     ${imgui_SOURCE_DIR}/imgui_widgets.cpp)
 
-  target_include_directories(${name} PRIVATE include ${imgui_SOURCE_DIR})
+  target_include_directories(${name} PRIVATE include ${PLATFORMHEADS_RUNTIME_DIR}/include ${imgui_SOURCE_DIR})
+
+  # Threads for the thread the machine's fonts are found on, and dl for fontconfig, which is looked
+  # for at run time rather than linked.
+  find_package(Threads REQUIRED)
+  target_link_libraries(${name} PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
 
   # ImGui's characters are sixteen bits unless told otherwise, and everything past the basic
   # plane, which is most emoji and the rarer Han characters, is then the replacement character

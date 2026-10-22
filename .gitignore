@@ -13,4 +13,7 @@ nul
 /src/TestResults
 /build/
 sample/native/build/
+/.build/
+/.swiftpm/
+Package.resolved
 *.lnk
