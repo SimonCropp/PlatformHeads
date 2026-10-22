@@ -82,6 +82,36 @@ platformheads_fetch(FORMATS PNG)
 platformheads_add_library(myapp_ui SOURCES src/myapp.cpp)
 ```
 
+`platformheads_add_library` also compiles in the native runtime, `native/runtime`, and puts its header on the library's include path: `#include "platformheads/runtime.h"`. It is what a raylib head does underneath its drawing, in namespace `ph`, as a toolkit and not a framework, so the app keeps its own present, poll and capture and calls these where it did the same itself:
+
+ * The window: `OpenWindow` makes it hidden and shows it where it was left, `SetHidden` and `Focus` bring a minimised one back, `TakeCloseRequest` clears raylib's latched close flag, and `GetPlacement` reports the bounds a maximised window goes back to.
+ * Input: GLFW's callbacks set over raylib's, so a press and release between two frames are both seen. `PopKey` hands keys over one at a time, `LetterOf` reads a control chord by the layout's letter, `FeedImGui` gives ImGui what happened in order, and `TakeWheelNotches` keeps a touchpad's fractions.
+ * Which frames are built and drawn: `Arrived`, `CanLeaveAlone`, `Show` (drawn only when the draw lists differ from those on the screen), `Rest` and `MarkStale`.
+ * Drawing and fonts: `RenderDrawData` with ImGui's dynamic textures, `AddEmbeddedFont`, and `UseSystemFonts`, which finds the characters the embedded font lacks through fontconfig, loaded at run time, on a thread of its own.
+ * Strings and labels: `Slice` and `Copy`, bounds checked in sixty four bits, and labels with `##` in them drawn as they are.
+
+
+## The Swift package
+
+`PlatformHeadsMac`, the same for an AppKit head: a set of pieces the app's own package glues in, depended on at the same tag as the rest, and linked into the library the managed side loads:
+
+```swift
+dependencies: [
+    .package(url: "https://github.com/SimonCropp/PlatformHeads", exact: "<tag>")
+],
+targets: [
+    .target(
+        name: "MyApp",
+        dependencies: [.product(name: "PlatformHeadsMac", package: "PlatformHeads")])
+]
+```
+
+ * `HeadWindow` makes the application and the window when `NSApplication.run` is never called, `EventPump` dispatches AppKit's events and waits out the frame, returning early for input and waiting longer for a window nobody can see, and `TerminateGuard` turns a quit from the Dock or a logout into the app's own.
+ * `NapGuard` keeps App Nap off, which would coalesce the timers a head is driven by.
+ * `KnobScroller` follows a drag of its knob as ordinary events rather than in AppKit's own loop, and `ScrollerTravel` counts a scroller in rows, so its travel is the managed side's clamp.
+ * `WheelNotches` and `Steps` tell a wheel from a trackpad and keep the fractions, and `ToolTipRegions` registers tips again only when they change, which is what lets their delay elapse.
+ * `StringBlob` reads the ABI's string blob bounds checked, `Capture` writes a png at a pinned scale for the pixel snapshots, `Clipboard` sets text, and `WindowPlacement` turns AppKit's frames into the top-left bounds every head reports.
+
 
 ## The build-native workflow
 

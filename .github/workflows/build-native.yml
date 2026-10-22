@@ -111,8 +111,10 @@ jobs:
             : "${LIBRARY:?LIBRARY is the bare name of the library, such as myapp_ui}"
             NATIVE="${NATIVE:-native}"
 
-            # What raylib's bundled GLFW builds against, for both its X11 and Wayland backends.
-            dnf install -y \
+            # What raylib's bundled GLFW builds against, for both its X11 and Wayland backends. All of it is
+            # AlmaLinux's own, so EPEL, which the image enables, is left out: its mirrors failed the job with
+            # bad certificates and checksums while nothing was wanted from them.
+            dnf install -y --disablerepo=epel \
               git pkgconfig \
               libX11-devel libXext-devel libXrandr-devel libXi-devel libXcursor-devel libXinerama-devel \
               mesa-libGL-devel wayland-devel libxkbcommon-devel
