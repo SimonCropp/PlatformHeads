@@ -8,8 +8,11 @@
 
   <ItemGroup>
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <Using Include="System.Collections.Concurrent" />
+    <Using Include="System.Diagnostics" />
     <Using Include="System.Diagnostics.CodeAnalysis" />
     <Using Include="System.Globalization" />
+    <Using Include="System.Net" />
     <Using Include="System.Reflection" />
     <Using Include="System.Runtime.InteropServices" />
   </ItemGroup>
