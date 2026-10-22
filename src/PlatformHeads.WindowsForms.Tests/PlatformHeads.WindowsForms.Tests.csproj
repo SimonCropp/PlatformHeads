@@ -11,6 +11,7 @@
     <Using Include="PlatformHeads" />
     <Using Include="System.Diagnostics" />
     <Using Include="System.Drawing" />
+    <Using Include="System.Runtime.InteropServices" />
     <Using Include="System.Windows.Forms" />
     <ProjectReference Include="..\PlatformHeads.WindowsForms\PlatformHeads.WindowsForms.csproj" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />

@@ -8,6 +8,7 @@
     <Using Include="System.Diagnostics" />
     <Using Include="System.Globalization" />
     <Using Include="System.IO.Compression" />
+    <Using Include="System.Net" />
     <Using Include="System.Reflection" />
     <Using Include="System.Runtime.CompilerServices" />
     <Using Include="System.Runtime.InteropServices" />

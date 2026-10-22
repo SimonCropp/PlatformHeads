@@ -63,6 +63,15 @@ A head with native libraries committed under `runtimes\{rid}\native` sets `Platf
 The project that lists the heads still needs a `ProjectReference` to each, with `ReferenceOutputAssembly="false"`, `Private="false"` and `ExcludeAssets="all"`, for build ordering alone: each head is published by a `dotnet` of its own, and without the reference a solution build can have two processes building one head at once.
 
 
+## The tray pieces
+
+What a Windows tray needs whatever it lists:
+
+ * `MenuOnOpening.Rebuild(menu, build)` builds a tray menu's items every time it opens, beside the ones already on it, takes them off as it closes and disposes them at the next open. A strip that starts empty still opens on the first click.
+ * `SessionEndWindow` hears that the session is ending, for an app that is only a notify icon and so has no form to be closed.
+ * `IssueLink` builds a new GitHub issue's URL with the title and body encoded, and says whether a message is being raised for the first time this run. `LinkOpener.TryOpen` opens it on Windows, macOS or Linux.
+
+
 ## The CMake module
 
 `cmake/PlatformHeads.cmake`, fetched by tag. It pins raylib and Dear ImGui, switches off the raylib options that 6.0 wrongly defaults to on, and builds the head's library with what it needs to load on a stock machine:
