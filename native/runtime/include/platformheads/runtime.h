@@ -111,6 +111,18 @@ void TrackPlacement();
  * with enough of its width there to take hold of. */
 bool OnAMonitor(const Placement& placement);
 
+/*
+ * Called once as the connection to the X server is lost, which is how a logoff ends a head: the
+ * server goes, and with it XWayland on a Wayland desktop, since GLFW is built for X11 alone. Xlib
+ * then ends the process with exit(1), which runs nothing an app would have run on its way out, so
+ * this is its one chance to save what a clean exit would have.
+ *
+ * On the thread that reads the window's events, inside whichever call was reading them. The process
+ * still ends once it returns: Xlib allows nothing else, and the libX11 the library is built against
+ * is older than the call that would. Null stops listening. Nothing happens off Linux.
+ */
+void OnDisplayLost(void (*lost)());
+
 /* ---- input ---- */
 
 /*

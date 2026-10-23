@@ -15,6 +15,10 @@
 #include <deque>
 #include <vector>
 
+#if defined(__linux__)
+#include <dlfcn.h>
+#endif
+
 /*
  * GLFW's own calls, which raylib links into the library statically, so the symbols resolve
  * without GLFW's headers. glfwGetCurrentContext returns raylib's window.
@@ -460,6 +464,71 @@ bool LayoutTypes(unsigned int letter)
     return false;
 }
 
+/*
+ * Xlib's handler for a lost connection, which it calls with the display and which ends the process
+ * as it returns. Apart from Runtime, which closing a window clears: the display goes whether or not
+ * a window is open on it.
+ */
+typedef int (*PhDisplayLost)(void* display);
+
+struct DisplayWatch
+{
+    void (*lost)() = nullptr;
+
+    /* Xlib's own handler, put back behind this one's, which writes why the process is ending and
+     * ends it. */
+    PhDisplayLost xlib = nullptr;
+    bool installed = false;
+};
+
+DisplayWatch displayWatch;
+
+extern "C" int DisplayLost(void* display)
+{
+    /* Once: a handler that ended up running inside itself would save twice. */
+    void (*lost)() = displayWatch.lost;
+    displayWatch.lost = nullptr;
+    if (lost != nullptr)
+    {
+        lost();
+    }
+
+    return displayWatch.xlib != nullptr ? displayWatch.xlib(display) : 0;
+}
+
+/*
+ * Puts DisplayLost in as Xlib's handler, once there is something to call and Xlib is loaded, which
+ * it is once GLFW has opened its display. Looked up rather than linked, so the library needs nothing
+ * more to load than it did, and asks nothing of a process that never opened a display.
+ */
+void WatchDisplay()
+{
+#if defined(__linux__)
+    if (displayWatch.installed ||
+        displayWatch.lost == nullptr)
+    {
+        return;
+    }
+
+    void* xlib = dlopen("libX11.so.6", RTLD_LAZY | RTLD_NOLOAD);
+    if (xlib == nullptr)
+    {
+        return;
+    }
+
+    typedef PhDisplayLost (*PhSetDisplayLost)(PhDisplayLost handler);
+    const auto setHandler = reinterpret_cast<PhSetDisplayLost>(dlsym(xlib, "XSetIOErrorHandler"));
+    if (setHandler != nullptr)
+    {
+        displayWatch.xlib = setHandler(DisplayLost);
+        displayWatch.installed = true;
+    }
+
+    /* Only the count NOLOAD added. GLFW's own handle keeps the library loaded. */
+    dlclose(xlib);
+#endif
+}
+
 /* Whether the layout in use has a key that types any of the letters a to z, unshifted. */
 bool LayoutIsLatin()
 {
@@ -601,6 +670,7 @@ bool OpenWindow(const WindowOptions& options)
     runtime.minimised = false;
     runtime.focused = false;
     runtime.open = true;
+    WatchDisplay();
     return true;
 }
 
@@ -615,6 +685,12 @@ void CloseWindow()
     ClearInput();
     runtime.tracked = false;
     runtime.open = false;
+}
+
+void OnDisplayLost(void (*lost)())
+{
+    displayWatch.lost = lost;
+    WatchDisplay();
 }
 
 float WindowScale()

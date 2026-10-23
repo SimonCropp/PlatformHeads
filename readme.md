@@ -18,6 +18,7 @@ The `PlatformHeads.Core` NuGet package, in the `PlatformHeads` namespace. It is 
  * `ClipboardPump` offers a copy for a few frames, since a Windows clipboard another process holds refuses a set outright.
  * `WindowPlacement` is where a window was left, and `PlacementSettler` decides when a native window that reports where it is on every poll has stopped moving.
  * `NativeResolver` finds a head's native library under `runtimes/{rid}/native`, and never loads a glibc build into a musl process.
+ * `SessionEndSignals` hears a macOS or Linux session ending by the SIGTERM and SIGHUP it ends a process with, which .NET otherwise ends it on there and then, with no `finally` run and no `ProcessExit` raised. A second signal waits for the first one's ending, since systemd sends both at once.
 
 The assembly is signed, since DiffEngine's are.
 
@@ -93,7 +94,7 @@ platformheads_add_library(myapp_ui SOURCES src/myapp.cpp)
 
 `platformheads_add_library` also compiles in the native runtime, `native/runtime`, and puts its header on the library's include path: `#include "platformheads/runtime.h"`. It is what a raylib head does underneath its drawing, in namespace `ph`, as a toolkit and not a framework, so the app keeps its own present, poll and capture and calls these where it did the same itself:
 
- * The window: `OpenWindow` makes it hidden and shows it where it was left, `SetHidden` and `Focus` bring a minimised one back, `TakeCloseRequest` clears raylib's latched close flag, and `GetPlacement` reports the bounds a maximised window goes back to.
+ * The window: `OpenWindow` makes it hidden and shows it where it was left, `SetHidden` and `Focus` bring a minimised one back, `TakeCloseRequest` clears raylib's latched close flag, `GetPlacement` reports the bounds a maximised window goes back to, and `OnDisplayLost` is called as the X server goes, which is how a logoff ends the head, before Xlib ends the process with `exit(1)`.
  * Input: GLFW's callbacks set over raylib's, so a press and release between two frames are both seen. `PopKey` hands keys over one at a time, `LetterOf` reads a control chord by the layout's letter, `FeedImGui` gives ImGui what happened in order, and `TakeWheelNotches` keeps a touchpad's fractions.
  * Which frames are built and drawn: `Arrived`, `CanLeaveAlone`, `Show` (drawn only when the draw lists differ from those on the screen), `Rest` and `MarkStale`.
  * Drawing and fonts: `RenderDrawData` with ImGui's dynamic textures, `AddEmbeddedFont`, and `UseSystemFonts`, which finds the characters the embedded font lacks through fontconfig, loaded at run time, on a thread of its own.
