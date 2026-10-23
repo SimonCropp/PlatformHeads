@@ -5,7 +5,7 @@ name: Sample native
 # the container build, both checks, and on request the pull request with the binaries.
 #
 # There is no Swift package here, so the macOS job is not exercised by this. An app's own run is
-# the first to run it.
+# the first to run it. The run job beside it runs the C++ runtime the library is built with.
 on:
   push:
     paths:
@@ -46,3 +46,34 @@ jobs:
       # committed on every change, and proposing them is how that half of the workflow is tried.
       propose: ${{ github.event_name == 'workflow_dispatch' && inputs.propose }}
       pull-request-title: Rebuild sample native binaries
+
+  # The library above is built and checked, never run. This runs the runtime compiled into it,
+  # under Xvfb on the runner's own Ubuntu as the apps' pixel tests do: a window opened and rested
+  # through, and the X server killed under it, which OnDisplayLost has to hear before Xlib ends
+  # the process. Without it a change to the runtime was first run by an app, after the tag.
+  run:
+    name: run the runtime
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Install native dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build \
+            libx11-dev libxrandr-dev libxi-dev libxcursor-dev libxinerama-dev \
+            libgl1-mesa-dev libglu1-mesa-dev libwayland-dev libxkbcommon-dev \
+            xvfb xauth libgl1-mesa-dri
+
+      - name: Build the sample and its runner
+        run: |
+          cmake -S sample/native -B build/run -G Ninja -DCMAKE_BUILD_TYPE=Release -DSAMPLE_RUN=ON
+          cmake --build build/run
+
+      - name: Run the runtime under Xvfb
+        run: bash sample/native/run/run.sh build/run
