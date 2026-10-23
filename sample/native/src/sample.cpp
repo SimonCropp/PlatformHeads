@@ -1,8 +1,10 @@
-// A head with two entry points: enough to load, to ask a version of, and to have raylib and Dear
-// ImGui linked in and called, which is what decides what the library needs of a machine.
+// A head with a few entry points: enough to load, to ask a version of, to have raylib and Dear
+// ImGui linked in and called, which is what decides what the library needs of a machine, and to
+// run the shared runtime, which nothing else in this repository does.
 #include <cstdint>
 
 #include "imgui.h"
+#include "platformheads/runtime.h"
 #include "raylib.h"
 
 #if defined(_WIN32)
@@ -46,6 +48,31 @@ SAMPLE_API int32_t sample_frame(int32_t width, int32_t height) {
     ImGui::DestroyContext();
     CloseWindow();
     return vertices;
+}
+
+// The runtime's window, as an app's head opens it: hidden, as one behind a tray is. 1 when there
+// is one, 0 when there is no display to have one on.
+SAMPLE_API int32_t sample_open(void) {
+    ph::WindowOptions options;
+    options.width = 320;
+    options.height = 200;
+    options.title = "sample";
+    options.hidden = true;
+    return ph::OpenWindow(options) ? 1 : 0;
+}
+
+// The end of a present, which waits out the frame and reads the window system's events: where a
+// head hears the X server going.
+SAMPLE_API void sample_rest(void) {
+    ph::Rest();
+}
+
+SAMPLE_API void sample_on_display_lost(void (*lost)(void)) {
+    ph::OnDisplayLost(lost);
+}
+
+SAMPLE_API void sample_close(void) {
+    ph::CloseWindow();
 }
 
 } // extern "C"
