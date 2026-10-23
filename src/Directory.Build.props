@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project>
   <PropertyGroup>
-    <Version>0.3.0</Version>
+    <!-- A tag's build is that tag's version (build.yml). This is every other build's, so it is
+         kept at the last tag: a local pack to prove an app against was labelled with a release
+         two behind. -->
+    <Version>0.5.0</Version>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <!-- Signed, by the key.snk most of these repositories share, because DiffEngine is signed and
