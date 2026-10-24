@@ -16,6 +16,7 @@
     <Using Include="System.Text" />
     <Using Include="PlatformHeads" />
     <ProjectReference Include="..\PlatformHeads.Core\PlatformHeads.Core.csproj" />
+    <ProjectReference Include="..\PlatformHeads.Linux\PlatformHeads.Linux.csproj" />
     <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
     <PackageReference Include="TUnit" />
     <PackageReference Include="Microsoft.Testing.Extensions.CodeCoverage" />
