@@ -57,6 +57,14 @@ jobs:
       - name: Build
         run: dotnet build src/PlatformHeads.slnx --configuration ${{ env.CONFIGURATION }} ${{ env.VERSION_ARGUMENT }}
 
+      # The Linux tray's tests start a session bus of their own, and fail rather than skip without
+      # one, so the tray is never left untested on the one platform it is for.
+      - name: Install dbus
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends dbus
+
       - name: Test
         run: dotnet test --solution src/PlatformHeads.slnx --configuration ${{ env.CONFIGURATION }} --no-build --no-restore
 
