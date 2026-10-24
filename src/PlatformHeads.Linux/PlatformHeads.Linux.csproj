@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageTags>Cross platform, Linux, Tray, StatusNotifierItem, DBus</PackageTags>
+    <Description>The Linux tray of an app with one head per platform: a StatusNotifierItem with a dbusmenu, over D-Bus in managed code, with no GTK.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <PackageReference Include="Tmds.DBus.Protocol" />
+    <ProjectReference Include="..\PlatformHeads.Core\PlatformHeads.Core.csproj" />
+    <Using Include="System.Collections.Concurrent" />
+    <Using Include="Tmds.DBus.Protocol" />
+  </ItemGroup>
+</Project>

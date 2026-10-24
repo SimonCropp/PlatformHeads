@@ -73,6 +73,23 @@ What a Windows tray needs whatever it lists:
  * `IssueLink` builds a new GitHub issue's URL with the title and body encoded, and says whether a message is being raised for the first time this run. `LinkOpener.TryOpen` opens it on Windows, macOS or Linux.
 
 
+## The tray
+
+A tray icon on every platform, as a model the app hands over whole, so each platform only draws it. The model is in `PlatformHeads.Core`:
+
+ * `TrayModel<TIcon>` is which of the app's icons to show, the tooltip, and the menu. `TIcon` is the app's own enum, and each back end is given the pictures for all of it when it opens.
+ * `TrayMenuItem` is an entry: an id it reports when chosen, a label, enabled, a separator, a glyph, an optional check, and an optional submenu. Items are equal by value, submenus included.
+ * `ITray<TIcon>` takes a model with `Apply`, pops a `TrayNotification` with `Notify`, and hands over what the user did with `Poll`, as a `TrayInput`.
+ * `DesktopNotification` pops one through `notify-send` or `osascript`, for a tray with no balloons of its own.
+ * `RunAtLogin.ForPlatform(LoginItem)` is the Run key on Windows, a launch agent on macOS, and an XDG autostart entry on Linux.
+
+One back end a platform:
+
+ * Windows: `NotifyIconTray<TIcon>` in `PlatformHeads.WindowsForms`, which builds its menu each time it opens.
+ * Linux: `StatusNotifierTray<TIcon>` in `PlatformHeads.Linux`, a StatusNotifierItem with a dbusmenu over D-Bus, in managed code. It shows on KDE, Cinnamon and XFCE, and on GNOME with the AppIndicator extension. With no host on the bus, `Open` says so and returns null.
+ * macOS: `StatusItem` in the Swift package, which the app's native library drives.
+
+
 ## The CMake module
 
 `cmake/PlatformHeads.cmake`, fetched by tag. It pins raylib and Dear ImGui, switches off the raylib options that 6.0 wrongly defaults to on, and builds the head's library with what it needs to load on a stock machine:
@@ -121,6 +138,7 @@ targets: [
  * `KnobScroller` follows a drag of its knob as ordinary events rather than in AppKit's own loop, and `ScrollerTravel` counts a scroller in rows, so its travel is the managed side's clamp.
  * `WheelNotches` and `Steps` tell a wheel from a trackpad and keep the fractions, and `ToolTipRegions` registers tips again only when they change, which is what lets their delay elapse.
  * `StringBlob` reads the ABI's string blob bounds checked, `Capture` writes a png at a pinned scale for the pixel snapshots, `Clipboard` sets text, and `WindowPlacement` turns AppKit's frames into the top-left bounds every head reports.
+ * `StatusItem` is a tray app's menu bar item: a left click is the icon's, and the menu, built from `StatusMenuItem`s with submenus and checks, is the right button's or a control-click's.
 
 
 ## The build-native workflow
