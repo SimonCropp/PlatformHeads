@@ -21,13 +21,20 @@ public class StatusNotifierTrayTests
             (_, size) => new byte[size * size * 4],
             NeedsAttention: _ => _ == TestTrayIcon.Attention);
 
+    static (StatusNotifierTray<TestTrayIcon>? Tray, string? Error) Open(string address)
+    {
+        var tray = StatusNotifierTray<TestTrayIcon>.Open(Options(), address, out var error);
+        return (tray, error);
+    }
+
     [Test]
     public async Task TheItemRegistersWithTheWatcher()
     {
         await using var bus = await PrivateBus.Start();
         using var watcher = await StandInWatcher.Start(bus.Address);
 
-        using var tray = StatusNotifierTray<TestTrayIcon>.Open(Options(), bus.Address, out var error);
+        var (tray, error) = Open(bus.Address);
+        using var _ = tray;
 
         await Assert.That(error).IsNull();
         await Assert.That(await watcher.Registered.WaitAsync(wait)).IsEqualTo(tray!.BusName);
@@ -38,7 +45,7 @@ public class StatusNotifierTrayTests
     {
         await using var bus = await PrivateBus.Start();
         using var watcher = await StandInWatcher.Start(bus.Address);
-        using var tray = StatusNotifierTray<TestTrayIcon>.Open(Options(), bus.Address, out _)!;
+        using var tray = Open(bus.Address).Tray!;
 
         tray.Apply(new(TestTrayIcon.Attention, "Two pending", items));
 
@@ -60,7 +67,7 @@ public class StatusNotifierTrayTests
     {
         await using var bus = await PrivateBus.Start();
         using var watcher = await StandInWatcher.Start(bus.Address);
-        using var tray = StatusNotifierTray<TestTrayIcon>.Open(Options(), bus.Address, out _)!;
+        using var tray = Open(bus.Address).Tray!;
         tray.Apply(new(TestTrayIcon.Idle, "Nothing pending", items));
         var accept = DbusMenuLayout.Build(items).All.Single(_ => _.ItemId == "accept");
 
@@ -81,7 +88,7 @@ public class StatusNotifierTrayTests
     {
         await using var bus = await PrivateBus.Start();
 
-        var tray = StatusNotifierTray<TestTrayIcon>.Open(Options(), bus.Address, out var error);
+        var (tray, error) = Open(bus.Address);
 
         await Assert.That(tray).IsNull();
         await Assert.That(error).Contains("AppIndicator");

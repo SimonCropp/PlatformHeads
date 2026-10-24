@@ -3,6 +3,14 @@ using Tmds.DBus.Protocol;
 /// <summary>
 /// What a desktop's panel is to a StatusNotifierItem: it owns the watcher's name, hears the item
 /// register, and reads and clicks it as a host does.
+/// <para>
+/// Every call yields to the pool before it returns. Tmds completes a call's task on the
+/// connection's receive loop, and what awaited it runs there, inline, so a test that went on to
+/// open the tray, which blocks its thread until the item has registered, blocked this
+/// connection's loop with it, and the registration it waited for was never received. A real
+/// panel is another process. ForceYielding is no help: it only yields for a task already complete
+/// when it is awaited.
+/// </para>
 /// </summary>
 sealed class StandInWatcher : IPathMethodHandler, IDisposable
 {
@@ -27,6 +35,7 @@ sealed class StandInWatcher : IPathMethodHandler, IDisposable
         await watcher.connection.ConnectAsync();
         watcher.connection.AddMethodHandler(watcher);
         await watcher.connection.RequestNameAsync(StatusNotifierTray<TestTrayIcon>.WatcherName, RequestNameOptions.None);
+        await Task.Yield();
         return watcher;
     }
 
@@ -44,7 +53,7 @@ sealed class StandInWatcher : IPathMethodHandler, IDisposable
         return default;
     }
 
-    public Task<VariantValue> Property(string destination, string path, string interfaceName, string name)
+    public async Task<VariantValue> Property(string destination, string path, string interfaceName, string name)
     {
         var writer = connection.GetMessageWriter();
         writer.WriteMethodCallHeader(destination, path, "org.freedesktop.DBus.Properties", "Get", "ss");
@@ -52,13 +61,15 @@ sealed class StandInWatcher : IPathMethodHandler, IDisposable
         writer.WriteString(name);
         var message = writer.CreateMessage();
         writer.Dispose();
-        return connection.CallMethodAsync(message, ReadVariant);
+        var value = await connection.CallMethodAsync(message, ReadVariant);
+        await Task.Yield();
+        return value;
     }
 
     static VariantValue ReadVariant(Message reply, object? state) =>
         reply.GetBodyReader().ReadVariantValue();
 
-    public Task<VariantValue> MenuProperty(string destination, int id, string name)
+    public async Task<VariantValue> MenuProperty(string destination, int id, string name)
     {
         var writer = connection.GetMessageWriter();
         writer.WriteMethodCallHeader(destination, "/MenuBar", "com.canonical.dbusmenu", "GetProperty", "is");
@@ -66,13 +77,15 @@ sealed class StandInWatcher : IPathMethodHandler, IDisposable
         writer.WriteString(name);
         var message = writer.CreateMessage();
         writer.Dispose();
-        return connection.CallMethodAsync(message, ReadVariant);
+        var value = await connection.CallMethodAsync(message, ReadVariant);
+        await Task.Yield();
+        return value;
     }
 
     /// <summary>
     /// A click on a menu node, as a host reports one.
     /// </summary>
-    public Task Click(string destination, int id)
+    public async Task Click(string destination, int id)
     {
         var writer = connection.GetMessageWriter();
         writer.WriteMethodCallHeader(destination, "/MenuBar", "com.canonical.dbusmenu", "Event", "isvu");
@@ -82,13 +95,14 @@ sealed class StandInWatcher : IPathMethodHandler, IDisposable
         writer.WriteUInt32(0);
         var message = writer.CreateMessage();
         writer.Dispose();
-        return connection.CallMethodAsync(message);
+        await connection.CallMethodAsync(message);
+        await Task.Yield();
     }
 
     /// <summary>
     /// A left click on the icon.
     /// </summary>
-    public Task Activate(string destination)
+    public async Task Activate(string destination)
     {
         var writer = connection.GetMessageWriter();
         writer.WriteMethodCallHeader(destination, "/StatusNotifierItem", "org.kde.StatusNotifierItem", "Activate", "ii");
@@ -96,7 +110,8 @@ sealed class StandInWatcher : IPathMethodHandler, IDisposable
         writer.WriteInt32(0);
         var message = writer.CreateMessage();
         writer.Dispose();
-        return connection.CallMethodAsync(message);
+        await connection.CallMethodAsync(message);
+        await Task.Yield();
     }
 
     public void Dispose() =>
