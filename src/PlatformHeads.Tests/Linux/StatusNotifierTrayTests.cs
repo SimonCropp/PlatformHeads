@@ -81,6 +81,25 @@ public class StatusNotifierTrayTests
     }
 
     /// <summary>
+    /// A panel that restarts, as one does when it crashes or is reconfigured, is a new watcher
+    /// that has never heard of the item, which would otherwise be in no tray until the app was
+    /// restarted too.
+    /// </summary>
+    [Test]
+    public async Task TheItemRegistersAgainWithAWatcherThatRestarts()
+    {
+        await using var bus = await PrivateBus.Start();
+        var first = await StandInWatcher.Start(bus.Address);
+        using var tray = Open(bus.Address).Tray!;
+        await first.Registered.WaitAsync(wait);
+
+        first.Dispose();
+        using var second = await StandInWatcher.Start(bus.Address);
+
+        await Assert.That(await second.Registered.WaitAsync(wait)).IsEqualTo(tray.BusName);
+    }
+
+    /// <summary>
     /// A stock GNOME has no watcher, and an app is told why rather than putting an icon nowhere.
     /// </summary>
     [Test]

@@ -119,11 +119,16 @@ public sealed class StatusNotifierTray<TIcon> : ITray<TIcon>
         return (name, newOwner);
     }
 
+    /// <summary>
+    /// Asks whether the notification is the watch ending before asking why: the reason throws for
+    /// any other notification, every signal among them, so read first it threw for every name
+    /// that changed hands on the bus, and the item never registered with a panel that restarted.
+    /// </summary>
     void OnNameOwnerChanged(Notification<(string Name, string NewOwner)> notification)
     {
-        if (notification.Exception is { } exception)
+        if (notification.IsCompletion)
         {
-            options.Failed?.Invoke(exception, "NameOwnerChanged");
+            options.Failed?.Invoke(notification.CompletionReason, "NameOwnerChanged");
             return;
         }
 
