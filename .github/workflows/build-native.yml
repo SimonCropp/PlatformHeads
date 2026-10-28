@@ -19,6 +19,9 @@ name: Build native
 #         swift-package: native/swift
 #         mac-runtimes: src/MyApp.Native/runtimes
 #
+# A Swift package can make more than one library, such as a tray's beside a window's, and
+# mac-libraries collects the others from the same build, each into the head that loads it.
+#
 # The binaries are committed and not built during a normal build, so that a plain dotnet build
 # produces a shippable package on any machine and contributors never need a C++ toolchain.
 on:
@@ -42,6 +45,10 @@ on:
         default: ''
       mac-runtimes:
         description: The runtimes folder of the head that loads the macOS library.
+        type: string
+        default: ''
+      mac-libraries:
+        description: Further libraries the Swift package builds, one a line, each its bare name and the runtimes folder of the head that loads it, such as `myapp_tray src/MyApp.Tray/runtimes`.
         type: string
         default: ''
       swift-test:
@@ -209,6 +216,7 @@ jobs:
       LIBRARY: ${{ inputs.library }}
       PACKAGE: ${{ inputs.swift-package }}
       RUNTIMES: ${{ inputs.mac-runtimes }}
+      MORE: ${{ inputs.mac-libraries }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -232,42 +240,53 @@ jobs:
           # world. Every candidate is checked, and if none is already universal they are merged,
           # so the only thing that can be collected is a fat binary. The dSYM holds a DWARF file
           # of the same name which is also universal, so it is left out by path.
-          candidates=$(find "$PACKAGE/.build" -name "lib$LIBRARY.dylib" -not -path '*.dSYM/*')
-          if [ -z "$candidates" ]; then
-            echo "::error::swift build produced no lib$LIBRARY.dylib"
-            exit 1
-          fi
-
-          dylib=""
-          for candidate in $candidates; do
-            archs=$(lipo -archs "$candidate" 2>/dev/null || echo "")
-            if [[ "$archs" == *x86_64* && "$archs" == *arm64* ]]; then
-              dylib="$candidate"
-              break
+          collect() {
+            local library=$1 runtimes=$2
+            candidates=$(find "$PACKAGE/.build" -name "lib$library.dylib" -not -path '*.dSYM/*')
+            if [ -z "$candidates" ]; then
+              echo "::error::swift build produced no lib$library.dylib"
+              exit 1
             fi
-          done
 
-          if [ -z "$dylib" ]; then
-            dylib="universal/lib$LIBRARY.dylib"
-            mkdir -p universal
-            # shellcheck disable=SC2086
-            lipo -create $candidates -output "$dylib"
-          fi
+            dylib=""
+            for candidate in $candidates; do
+              archs=$(lipo -archs "$candidate" 2>/dev/null || echo "")
+              if [[ "$archs" == *x86_64* && "$archs" == *arm64* ]]; then
+                dylib="$candidate"
+                break
+              fi
+            done
 
-          archs=$(lipo -archs "$dylib")
-          echo "collecting $dylib: $archs"
-          for arch in x86_64 arm64; do
-            case " $archs " in
-              *" $arch "*) ;;
-              *) echo "::error::$dylib is missing the $arch slice"; exit 1 ;;
-            esac
-          done
+            if [ -z "$dylib" ]; then
+              dylib="universal/lib$library.dylib"
+              mkdir -p universal
+              # shellcheck disable=SC2086
+              lipo -create $candidates -output "$dylib"
+            fi
 
-          strip -x "$dylib"
-          for rid in osx-x64 osx-arm64; do
-            mkdir -p "artifacts/$RUNTIMES/$rid/native"
-            cp "$dylib" "artifacts/$RUNTIMES/$rid/native/"
-          done
+            archs=$(lipo -archs "$dylib")
+            echo "collecting $dylib: $archs"
+            for arch in x86_64 arm64; do
+              case " $archs " in
+                *" $arch "*) ;;
+                *) echo "::error::$dylib is missing the $arch slice"; exit 1 ;;
+              esac
+            done
+
+            strip -x "$dylib"
+            for rid in osx-x64 osx-arm64; do
+              mkdir -p "artifacts/$runtimes/$rid/native"
+              cp "$dylib" "artifacts/$runtimes/$rid/native/"
+            done
+          }
+
+          collect "$LIBRARY" "$RUNTIMES"
+          # The further libraries the one swift build made, each into the head that loads it
+          while read -r library runtimes; do
+            if [ -n "$library" ]; then
+              collect "$library" "$runtimes"
+            fi
+          done <<< "$MORE"
           ls -lhR artifacts
 
       - name: Upload
@@ -308,6 +327,19 @@ jobs:
       - name: Show what changed
         run: git status --short
 
+      # The runtimes folder of each further macOS library, the second word of its line, so the
+      # pull request takes those binaries as well as the first library's
+      - name: Paths
+        id: paths
+        env:
+          MORE: ${{ inputs.mac-libraries }}
+        run: |
+          {
+            echo 'more<<END_OF_PATHS'
+            echo "$MORE" | awk 'NF >= 2 { print $2 }'
+            echo 'END_OF_PATHS'
+          } >> "$GITHUB_OUTPUT"
+
       # A pull request and not a direct push: these are binaries, so the diff cannot be
       # reviewed and the change deserves an explicit approval. Its branch is named for the
       # branch that triggered it, which is also its base, so a rebuild on a feature branch does
@@ -326,3 +358,4 @@ jobs:
           add-paths: |
             ${{ inputs.linux-runtimes }}
             ${{ inputs.mac-runtimes }}
+            ${{ steps.paths.outputs.more }}
