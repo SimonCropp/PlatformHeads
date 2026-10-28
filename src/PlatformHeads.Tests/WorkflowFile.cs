@@ -12,9 +12,22 @@ static class WorkflowFile
     /// the first line that, trimmed, is <paramref name="after"/>: its lines with the block's own
     /// indentation taken off.
     /// </summary>
-    public static List<string> Block(string after, string key)
+    public static List<string> Block(string after, string key) =>
+        Block([after], key);
+
+    /// <summary>
+    /// As <see cref="Block(string, string)"/>, with each of <paramref name="after"/> found after
+    /// the one before it: a step's name, say, after the name of its job, where two jobs have a
+    /// step of that name.
+    /// </summary>
+    public static List<string> Block(string[] after, string key)
     {
-        var start = IndexOf(after, 0);
+        var start = 0;
+        foreach (var anchor in after)
+        {
+            start = IndexOf(anchor, start);
+        }
+
         var keyLine = IndexOf(key, start);
         var keyIndent = Indent(lines[keyLine]);
         var body = new List<string>();

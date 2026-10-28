@@ -53,6 +53,7 @@ A session ending is heard four ways, since nothing an app runs on a clean exit r
 
 - The workflow carries `native/build-linux.sh` inside itself, word for word, because a called workflow runs in the caller's checkout and cannot tell which tag of this repository it was called at. `BuildScriptTests` fails when the two differ, so edit both.
 - `CheckStepTests` runs the workflow's two check steps, as written in the file, against canned `objdump` output. `WorkflowFile` finds them by step name, so renaming a step means changing the test.
+- `CollectStepTests` runs the macOS job's collect step over a stand-in for what `swift build` leaves, with `lipo` and `strip` stood in for, and the propose job's paths step. A Swift package can make more than one library, a tray's beside a window's, and `mac-libraries` names the others, each with the runtimes folder of the head that loads it: one build, each library collected into its own head, and one pull request with them all. The collect step runs only on macOS, so nothing else runs it before an app's first build. Both run under `Bash`, Git's on Windows.
 - `BundlingTests` copies `src/PlatformHeads.Tests/Fixture` out of the repository and packs it with a real publish for each head. The fixture finds the props and targets through the `PlatformHeadsBuild` environment variable, since each head is published by a `dotnet` of its own that inherits the environment and not the command line's properties.
 
 ## MSBuild notes

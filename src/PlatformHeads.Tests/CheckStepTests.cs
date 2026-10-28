@@ -41,7 +41,7 @@ public class CheckStepTests
 
     static async Task<RunResult> RunStep(string step, string versions, string needed)
     {
-        var bash = FindBash();
+        var bash = Bash.Find();
         if (bash is null)
         {
             Skip.Test("No bash to run the step with.");
@@ -66,31 +66,6 @@ public class CheckStepTests
         script.Append(string.Join('\n', WorkflowFile.Block(step, "run: |")));
         script.Append('\n');
 
-        var file = Path.Combine(Path.GetTempPath(), $"PlatformHeads.Tests.{Guid.NewGuid():N}.sh");
-        await File.WriteAllTextAsync(file, script.ToString());
-        try
-        {
-            // The flags GitHub runs a bash step with.
-            return await Run.Program(bash, ["--noprofile", "--norc", "-eo", "pipefail", file], Path.GetTempPath());
-        }
-        finally
-        {
-            File.Delete(file);
-        }
-    }
-
-    /// <summary>
-    /// Git's on Windows, by where Git for Windows puts it: the bash on a Windows PATH is as
-    /// likely to be WSL's launcher, which runs the script in a distribution that cannot see it.
-    /// </summary>
-    static string? FindBash()
-    {
-        if (!OperatingSystem.IsWindows())
-        {
-            return "bash";
-        }
-
-        var git = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), "Git", "bin", "bash.exe");
-        return File.Exists(git) ? git : null;
+        return await Bash.Run(bash, script.ToString(), Path.GetTempPath());
     }
 }
