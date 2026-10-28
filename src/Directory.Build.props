@@ -4,7 +4,7 @@
     <!-- A tag's build is that tag's version (build.yml). This is every other build's, so it is
          kept at the last tag: a local pack to prove an app against was labelled with a release
          two behind. -->
-    <Version>0.7.0</Version>
+    <Version>0.7.1</Version>
     <Nullable>enable</Nullable>
     <LangVersion>preview</LangVersion>
     <!-- Signed, by the key.snk most of these repositories share, because DiffEngine is signed and
