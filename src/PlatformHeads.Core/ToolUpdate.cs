@@ -114,13 +114,14 @@ public sealed class ToolUpdate(string packageId, string shim, string outcome)
             // shell with it and left no app at all, so the script runs as a job with job control
             // on, which puts it in a group of its own. /bin/bash rather than /bin/sh, which can be
             // set to another shell. Seen from a launch agent on a GitHub macOS runner: a plain
-            // child was ended, and one started this way was not.
+            // child was ended, and one started this way was not. A subshell rather than a group,
+            // which takes no terminator: the script ends in `&`, and `&;` is no command.
             info = new("/bin/bash")
             {
                 ArgumentList =
                 {
                     "-c",
-                    $"set -m; {{ {UnixScript}; }} &"
+                    Job
                 }
             };
         }
@@ -201,6 +202,12 @@ public sealed class ToolUpdate(string packageId, string shim, string outcome)
         $"if output=$(\"$2\" tool update \"$3\" --tool-path \"$4\" --prerelease 2>&1); then status={ToolUpdateOutcome.SucceededLine}; else status={ToolUpdateOutcome.FailedLine}; fi",
         "printf '%s\\n%s\\n' \"$status\" \"$output\" > \"$5\"",
         "nohup \"$6\" < /dev/null > /dev/null 2>&1 &");
+
+    /// <summary>
+    /// What /bin/bash is handed on macOS: <see cref="UnixScript" /> as a job, with job control on.
+    /// After it, since a static is set in the order it is written.
+    /// </summary>
+    public static string Job { get; } = $"set -m; ( {UnixScript} ) &";
 
     /// <summary>
     /// The shim of the tool whose store <paramref name="path" /> is under, or null for a path

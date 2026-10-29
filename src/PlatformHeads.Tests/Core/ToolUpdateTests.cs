@@ -63,7 +63,7 @@ public class ToolUpdateTests
         if (OperatingSystem.IsMacOS())
         {
             await Assert.That(info.FileName).IsEqualTo("/bin/bash");
-            await Assert.That(Lines(info.ArgumentList)).IsEqualTo(Lines(["-c", $"set -m; {{ {ToolUpdate.UnixScript}; }} &", ..arguments]));
+            await Assert.That(Lines(info.ArgumentList)).IsEqualTo(Lines(["-c", ToolUpdate.Job, ..arguments]));
             return;
         }
 
@@ -99,6 +99,27 @@ public class ToolUpdateTests
     public async Task TheUnixScript() =>
         await Assert.That(ToolUpdate.UnixScript)
             .IsEqualTo("""waited=0; while kill -0 "$1" 2>/dev/null && [ $waited -lt 150 ]; do sleep 0.2; waited=$((waited+1)); done; if output=$("$2" tool update "$3" --tool-path "$4" --prerelease 2>&1); then status=ok; else status=failed; fi; printf '%s\n%s\n' "$status" "$output" > "$5"; nohup "$6" < /dev/null > /dev/null 2>&1 &""");
+
+    /// <summary>
+    /// macOS's job read by bash, so the ubuntu job finds what only the macOS one runs. It was
+    /// wrapped as <c>{ script; }</c>, and the script ends in <c>&amp;</c>, which made <c>&amp;;</c>.
+    /// </summary>
+    [Test]
+    [RunOn(TUnit.Core.Enums.OS.Linux | TUnit.Core.Enums.OS.MacOs)]
+    public async Task TheMacJobIsBash()
+    {
+        var info = new ProcessStartInfo("/bin/bash", ["-n", "-c", ToolUpdate.Job])
+        {
+            UseShellExecute = false,
+            RedirectStandardError = true
+        };
+        using var bash = Process.Start(info)!;
+        var error = await bash.StandardError.ReadToEndAsync();
+        await bash.WaitForExitAsync();
+
+        await Assert.That(error).IsEmpty();
+        await Assert.That(bash.ExitCode).IsEqualTo(0);
+    }
 
     /// <summary>
     /// The shell this platform starts, run: it waits for the app, updates by the tool path, says
