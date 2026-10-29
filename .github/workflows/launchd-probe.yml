@@ -1,0 +1,70 @@
+name: launchd probe
+
+# Throwaway: whether launchd ends what a login item started once the item exits, which would take
+# an updater a tray starts and then exits for down with it. Removed before the branch is merged.
+on:
+  push:
+    branches: [tool-update]
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: macos-latest
+    timeout-minutes: 5
+    steps:
+      - name: Does launchd end the child of a login item that exits
+        run: |
+          set -u
+          uid=$(id -u)
+          dir="$RUNNER_TEMP/probe"
+          agents="$HOME/Library/LaunchAgents"
+          mkdir -p "$dir" "$agents"
+          sw_vers
+          readlink /private/var/select/sh || true
+
+          # A login item's program: starts a child, says which, and exits, as a tray does once it
+          # has started its updater. $1 is where to write the child's id, $2 is set -m or nothing.
+          printf '#!/bin/sh\n[ "$2" = monitor ] && set -m\n/bin/sleep 120 &\necho $! > "$1"\nexit 0\n' > "$dir/parent.sh"
+          chmod +x "$dir/parent.sh"
+
+          probe() {
+            name=$1
+            abandon=$2
+            mode=$3
+            plist="$agents/$name.plist"
+            extra=""
+            if [ "$abandon" = yes ]; then
+              extra="<key>AbandonProcessGroup</key><true/>"
+            fi
+            printf '<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">\n<plist version="1.0"><dict><key>Label</key><string>%s</string><key>ProgramArguments</key><array><string>/bin/sh</string><string>%s</string><string>%s</string><string>%s</string></array><key>RunAtLoad</key><true/><key>LimitLoadToSessionType</key><string>Aqua</string>%s</dict></plist>\n' \
+              "$name" "$dir/parent.sh" "$dir/$name.pid" "$mode" "$extra" > "$plist"
+            if ! launchctl bootstrap "gui/$uid" "$plist"; then
+              echo "$name: could not be loaded into gui/$uid"
+              return
+            fi
+            for i in $(seq 1 50); do
+              [ -s "$dir/$name.pid" ] && break
+              sleep 0.2
+            done
+            if [ ! -s "$dir/$name.pid" ]; then
+              echo "$name: never ran"
+              launchctl bootout "gui/$uid/$name" || true
+              return
+            fi
+            sleep 3
+            child=$(cat "$dir/$name.pid")
+            if kill -0 "$child" 2>/dev/null; then
+              echo "RESULT $name: the child outlived its login item"
+            else
+              echo "RESULT $name: launchd ended the child"
+            fi
+            launchctl print "gui/$uid/$name" 2>/dev/null | grep -E "state|last exit" || true
+            launchctl bootout "gui/$uid/$name" 2>/dev/null || true
+            kill "$child" 2>/dev/null || true
+          }
+
+          probe probe.default no none
+          probe probe.abandon yes none
+          probe probe.monitor no monitor
