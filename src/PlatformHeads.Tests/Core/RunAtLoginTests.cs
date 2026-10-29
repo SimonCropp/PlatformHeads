@@ -53,6 +53,8 @@ public class RunAtLoginTests
                     <true/>
                     <key>LimitLoadToSessionType</key>
                     <string>Aqua</string>
+                    <key>AbandonProcessGroup</key>
+                    <true/>
                 </dict>
                 </plist>
 

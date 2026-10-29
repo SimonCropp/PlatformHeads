@@ -93,12 +93,35 @@ jobs:
       - name: Test
         run: swift test
 
+  # The tool update's macOS shell, run: bash with job control on, which is how it escapes the
+  # process group launchd ends with a login item. Only those tests, since the rest pack apps and
+  # build native code this job has no reason to set up.
+  macos:
+    name: macos
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      - name: Build
+        run: dotnet build src/PlatformHeads.Tests/PlatformHeads.Tests.csproj --configuration Release
+
+      - name: Test the tool update
+        run: dotnet test --project src/PlatformHeads.Tests/PlatformHeads.Tests.csproj --configuration Release --no-build -- --treenode-filter "/*/*/ToolUpdate*/*"
+
   # Trusted publishing: no stored API key. nuget.org validates GitHub's OIDC token against the
   # policy naming this repository, this workflow file and the nuget environment, and returns a
   # key good for an hour. Waits on every build, so a package only ships once the tests have
-  # passed on Windows and on Linux, and a tag only once the Swift package builds.
+  # passed on Windows and on Linux, the tool update on macOS, and a tag only once the Swift
+  # package builds.
   publish:
-    needs: [build, swift]
+    needs: [build, swift, macos]
     environment: nuget
     if: startsWith(github.ref, 'refs/tags/')
     runs-on: ubuntu-latest

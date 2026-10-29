@@ -33,6 +33,12 @@ public sealed class LaunchAgent(LoginItem item) : IRunAtLogin
 
     /// <summary>
     /// RunAtLoad without KeepAlive: started once at login, and the user can quit it.
+    /// <para>
+    /// AbandonProcessGroup, because otherwise launchd ends the app's whole process group as it
+    /// exits: whatever it started that is still open, a window or a diff tool, and the shell of a
+    /// <see cref="ToolUpdate" />, which then never starts the app again. Seen from a launch agent
+    /// on a GitHub macOS runner, with and without the key.
+    /// </para>
     /// </summary>
     public static string Compose(LoginItem item, string command) =>
         $"""
@@ -50,6 +56,8 @@ public sealed class LaunchAgent(LoginItem item) : IRunAtLogin
              <true/>
              <key>LimitLoadToSessionType</key>
              <string>Aqua</string>
+             <key>AbandonProcessGroup</key>
+             <true/>
          </dict>
          </plist>
 

@@ -81,13 +81,22 @@ A tray icon on every platform, as a model the app hands over whole, so each plat
  * `TrayMenuItem` is an entry: an id it reports when chosen, a label, enabled, a separator, a glyph, an optional check, and an optional submenu. Items are equal by value, submenus included.
  * `ITray<TIcon>` takes a model with `Apply`, pops a `TrayNotification` with `Notify`, and hands over what the user did with `Poll`, as a `TrayInput`.
  * `DesktopNotification` pops one through `notify-send` or `osascript`, for a tray with no balloons of its own.
- * `RunAtLogin.ForPlatform(LoginItem)` is the Run key on Windows, a launch agent on macOS, and an XDG autostart entry on Linux.
+ * `RunAtLogin.ForPlatform(LoginItem)` is the Run key on Windows, a launch agent on macOS, and an XDG autostart entry on Linux. The launch agent abandons its process group, so what the app started is not ended with it.
 
 One back end a platform:
 
  * Windows: `NotifyIconTray<TIcon>` in `PlatformHeads.WindowsForms`, which builds its menu each time it opens.
  * Linux: `StatusNotifierTray<TIcon>` in `PlatformHeads.Linux`, a StatusNotifierItem with a dbusmenu over D-Bus, in managed code. It shows on KDE, Cinnamon and XFCE, and on GNOME with the AppIndicator extension. With no host on the bus, `Open` says so and returns null.
  * macOS: `StatusItem` in the Swift package, which the app's native library drives.
+
+
+## Updating
+
+For an app installed as a dotnet tool, in `PlatformHeads.Core`:
+
+ * `ToolUpdate` runs `dotnet tool update` on the app and starts it again. `Start` hands that to a shell and returns, and the app then exits: the shell waits for it to go, updates by the tool path its shim is in, writes how that went, and starts the shim, whether the update worked or not. On Windows it first stops whatever else runs from the store, which would keep the old version from being removed. It uses the dotnet the app runs on, since a login item's PATH may have none.
+ * `ToolUpdate.ShimFor(path, command)` is the shim of the tool whose store a path is under, or null for a build's output.
+ * `ToolUpdateOutcome.Take(path)` reads and removes what the shell wrote, for the app it started to report.
 
 
 ## The CMake module
