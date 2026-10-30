@@ -77,7 +77,7 @@ public class StatusNotifierTrayTests
         var input = tray.Poll();
         await Assert.That(input.ClickedItem).IsEqualTo("accept");
         await Assert.That(input.IconClicked).IsTrue();
-        await Assert.That(tray.Poll()).IsEqualTo(new TrayInput());
+        await Assert.That(tray.Poll()).IsEqualTo(new());
     }
 
     /// <summary>
