@@ -39,8 +39,8 @@ public class TrayMenuItemsTests
     [Test]
     public async Task AToggleShowsItsCheck()
     {
-        var on = (ToolStripMenuItem) TrayMenuItems.Create(new TrayMenuItem("startup", "Run at startup", Checked: true), options, _ => { });
-        var none = (ToolStripMenuItem) TrayMenuItems.Create(new TrayMenuItem("open", "Open"), options, _ => { });
+        var on = (ToolStripMenuItem) TrayMenuItems.Create(new("startup", "Run at startup", Checked: true), options, _ => { });
+        var none = (ToolStripMenuItem) TrayMenuItems.Create(new("open", "Open"), options, _ => { });
 
         await Assert.That(on.Checked).IsTrue();
         await Assert.That(none.Checked).IsFalse();

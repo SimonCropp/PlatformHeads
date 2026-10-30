@@ -27,7 +27,6 @@ public class HeadForm : Form
     bool closingForReal;
     WindowPlacement? settled;
     FormWindowState settledState;
-    WindowPlacement? lastPlacement;
     long lastFrame;
 
     /// <summary>
@@ -132,11 +131,11 @@ public class HeadForm : Form
                 var bounds = WindowState == FormWindowState.Normal ? Bounds : RestoreBounds;
                 if (bounds is { Width: > 0, Height: > 0 })
                 {
-                    lastPlacement = new(bounds.X, bounds.Y, bounds.Width, bounds.Height, maximized);
+                    field = new(bounds.X, bounds.Y, bounds.Width, bounds.Height, maximized);
                 }
             }
 
-            return lastPlacement;
+            return field;
         }
     }
 

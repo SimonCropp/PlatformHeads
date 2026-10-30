@@ -99,7 +99,7 @@ public class HeadFormTests
         using var form = new TestForm(left);
         form.ShowParked();
 
-        await Assert.That(form.Bounds).IsEqualTo(new Rectangle(left.X, left.Y, left.Width, left.Height));
+        await Assert.That(form.Bounds).IsEqualTo(new(left.X, left.Y, left.Width, left.Height));
         await Assert.That(form.Placement).IsEqualTo(left);
     }
 

@@ -56,7 +56,7 @@ public class SessionEndSignalsTests
         var failed = new TaskCompletionSource<Exception>();
         using var signals = new SessionEndSignals(
             () => throw new InvalidOperationException("saving failed"),
-            _ => failed.SetResult(_),
+            failed.SetResult,
             [PosixSignal.SIGCONT]);
 
         Send();

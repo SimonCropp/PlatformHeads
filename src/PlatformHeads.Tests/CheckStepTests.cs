@@ -39,7 +39,7 @@ public class CheckStepTests
         await Assert.That(result.ExitCode).IsEqualTo(expected).Because(result.Output);
     }
 
-    static async Task<RunResult> RunStep(string step, string versions, string needed)
+    static Task<RunResult> RunStep(string step, string versions, string needed)
     {
         var bash = Bash.Find();
         if (bash is null)
@@ -66,6 +66,6 @@ public class CheckStepTests
         script.Append(string.Join('\n', WorkflowFile.Block(step, "run: |")));
         script.Append('\n');
 
-        return await Bash.Run(bash, script.ToString(), Path.GetTempPath());
+        return Bash.Run(bash, script.ToString(), Path.GetTempPath());
     }
 }

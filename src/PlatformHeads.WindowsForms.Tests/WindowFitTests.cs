@@ -61,23 +61,23 @@ public class WindowFitTests
     [Arguments(96, 1100, 700)]
     [Arguments(144, 1650, 1050)]
     public async Task TheFirstSizeIsScaledToTheDisplay(int dpi, int width, int height) =>
-        await Assert.That(WindowFit.InitialClientSize(new(1100, 700), dpi, new(3840, 2100))).IsEqualTo(new Size(width, height));
+        await Assert.That(WindowFit.InitialClientSize(new(1100, 700), dpi, new(3840, 2100))).IsEqualTo(new(width, height));
 
     /// <summary>
     /// 1100 by 700 at 150% is too tall for a 1080p screen once the taskbar is taken off.
     /// </summary>
     [Test]
     public async Task TheFirstSizeIsKeptInsideTheWorkingArea() =>
-        await Assert.That(WindowFit.InitialClientSize(new(1100, 700), 144, new(1920, 1040))).IsEqualTo(new Size(1650, 936));
+        await Assert.That(WindowFit.InitialClientSize(new(1100, 700), 144, new(1920, 1040))).IsEqualTo(new(1650, 936));
 
     [Test]
     public async Task AWindowIsCentred() =>
-        await Assert.That(WindowFit.Centred(primary, new(1000, 600))).IsEqualTo(new Point(460, 220));
+        await Assert.That(WindowFit.Centred(primary, new(1000, 600))).IsEqualTo(new(460, 220));
 
     /// <summary>
     /// One too large for the area starts at its top left, so the title bar is still in reach.
     /// </summary>
     [Test]
     public async Task AWindowTooLargeToCentreStartsAtTheTopLeft() =>
-        await Assert.That(WindowFit.Centred(primary with { X = 100, Y = 50 }, new(3000, 2000))).IsEqualTo(new Point(100, 50));
+        await Assert.That(WindowFit.Centred(primary with { X = 100, Y = 50 }, new(3000, 2000))).IsEqualTo(new(100, 50));
 }
