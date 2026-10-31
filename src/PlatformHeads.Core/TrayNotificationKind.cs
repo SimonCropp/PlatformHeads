@@ -8,5 +8,11 @@ namespace PlatformHeads;
 public enum TrayNotificationKind
 {
     Error,
-    Info
+    Info,
+
+    /// <summary>
+    /// Something to know that is not itself a failure, such as a setting that could not take
+    /// effect. DiffEngineTray drew every balloon of its own with Windows' warning icon.
+    /// </summary>
+    Warning
 }

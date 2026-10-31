@@ -12,10 +12,16 @@ namespace PlatformHeads;
 /// for an app that draws its menus in colours of its own.
 /// </param>
 /// <param name="Style">Applied to each item as it is built, after everything else is set on it.</param>
+/// <param name="LeftClickOpensMenu">
+/// Whether a left click on the icon opens the menu, as a right click does. The click is still
+/// reported as <see cref="TrayInput.IconClicked" />. DiffEngineTray's menu is all it has, so both
+/// buttons open it.
+/// </param>
 public sealed record NotifyIconOptions<TIcon>(
     string Title,
     Func<TIcon, Icon?> Icon,
     Func<string, Image?>? Glyph = null,
     Action<ToolStrip>? Theme = null,
-    Action<ToolStripMenuItem, TrayMenuItem>? Style = null)
+    Action<ToolStripMenuItem, TrayMenuItem>? Style = null,
+    bool LeftClickOpensMenu = false)
     where TIcon : struct, Enum;
