@@ -12,11 +12,13 @@ public class MenuOnOpeningTests
         using var menu = new ContextMenuStrip();
         var exit = menu.Items.Add("Exit");
         var opens = 0;
-        MenuOnOpening.Rebuild(menu, _ =>
-        {
-            opens++;
-            _.Add($"Open {opens}");
-        });
+        MenuOnOpening.Rebuild(
+            menu,
+            _ =>
+            {
+                opens++;
+                _.Add($"Open {opens}");
+            });
 
         Open(menu);
         var first = Texts(menu);
@@ -92,7 +94,9 @@ public class MenuOnOpeningTests
     public async Task AnOpenThatBuildsNothingIsCancelled()
     {
         using var menu = new ContextMenuStrip();
-        MenuOnOpening.Rebuild(menu, _ => { });
+        MenuOnOpening.Rebuild(menu, _ =>
+        {
+        });
 
         Open(menu);
 
@@ -106,5 +110,8 @@ public class MenuOnOpeningTests
     }
 
     static List<string> Texts(ContextMenuStrip menu) =>
-        menu.Items.Cast<ToolStripItem>().Select(_ => _.Text ?? "").ToList();
+        menu.Items
+            .Cast<ToolStripItem>()
+            .Select(_ => _.Text ?? "")
+            .ToList();
 }
