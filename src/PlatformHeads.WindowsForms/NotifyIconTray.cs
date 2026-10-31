@@ -40,9 +40,17 @@ public sealed class NotifyIconTray<TIcon> : ITray<TIcon>
         };
         icon.MouseClick += (_, arguments) =>
         {
-            if (arguments.Button == MouseButtons.Left)
+            if (arguments.Button != MouseButtons.Left)
             {
-                iconClicked = true;
+                return;
+            }
+
+            iconClicked = true;
+            if (options.LeftClickOpensMenu)
+            {
+                // Through the icon's own way of showing it, as a right click is, which brings the
+                // icon's window to the foreground first so the menu closes when focus leaves it
+                ShowContextMenu(icon);
             }
         };
         icon.DoubleClick += (_, _) => iconClicked = true;
@@ -94,9 +102,38 @@ public sealed class NotifyIconTray<TIcon> : ITray<TIcon>
     public void Notify(TrayNotification notification)
     {
         announced = notification.Key ?? "";
-        var balloonIcon = notification.Kind == TrayNotificationKind.Info ? ToolTipIcon.Info : ToolTipIcon.Error;
-        icon.ShowBalloonTip(5000, notification.Title, notification.Message, balloonIcon);
+        icon.ShowBalloonTip(5000, notification.Title, notification.Message, BalloonIcon(notification.Kind));
     }
+
+    public static ToolTipIcon BalloonIcon(TrayNotificationKind kind) =>
+        kind switch
+        {
+            TrayNotificationKind.Info => ToolTipIcon.Info,
+            TrayNotificationKind.Warning => ToolTipIcon.Warning,
+            _ => ToolTipIcon.Error
+        };
+
+    /// <summary>
+    /// The icon's own window, which Windows sends what concerns the icon to: what an app registers
+    /// a hot key against, so the key arrives on the thread the icon was made on with no window of
+    /// the app's own.
+    /// </summary>
+    public IntPtr Handle => WindowOf(icon);
+
+    /// <summary>
+    /// Read from the field that holds it, since no accessor can name the type of that field, which
+    /// is not public. Zero until the icon is first shown, which is when WinForms makes the window:
+    /// a NotifyIconTray is shown as it is made.
+    /// </summary>
+    public static IntPtr WindowOf(NotifyIcon target)
+    {
+        var field = typeof(NotifyIcon).GetField("_window", BindingFlags.NonPublic | BindingFlags.Instance)!;
+        var window = (NativeWindow) field.GetValue(target)!;
+        return window.Handle;
+    }
+
+    [UnsafeAccessor(UnsafeAccessorKind.Method, Name = "ShowContextMenu")]
+    static extern void ShowContextMenu(NotifyIcon icon);
 
     void Build(ToolStripItemCollection items)
     {

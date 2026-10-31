@@ -85,7 +85,7 @@ A tray icon on every platform, as a model the app hands over whole, so each plat
 
 One back end a platform:
 
- * Windows: `NotifyIconTray<TIcon>` in `PlatformHeads.WindowsForms`, which builds its menu each time it opens.
+ * Windows: `NotifyIconTray<TIcon>` in `PlatformHeads.WindowsForms`, which builds its menu each time it opens. `LeftClickOpensMenu` opens it on either button, and `Handle` is the icon's window, for registering hot keys against.
  * Linux: `StatusNotifierTray<TIcon>` in `PlatformHeads.Linux`, a StatusNotifierItem with a dbusmenu over D-Bus, in managed code. It shows on KDE, Cinnamon and XFCE, and on GNOME with the AppIndicator extension. With no host on the bus, `Open` says so and returns null.
  * macOS: `StatusItem` in the Swift package, which the app's native library drives.
 

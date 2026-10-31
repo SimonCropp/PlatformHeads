@@ -35,6 +35,8 @@
     <Using Include="System.ComponentModel" />
     <Using Include="System.Diagnostics" />
     <Using Include="System.Drawing" />
+    <Using Include="System.Reflection" />
+    <Using Include="System.Runtime.CompilerServices" />
     <Using Include="System.Runtime.InteropServices" />
     <Using Include="System.Windows.Forms" />
   </ItemGroup>
