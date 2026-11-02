@@ -5,8 +5,8 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageVersion Include="Microsoft.Testing.Extensions.CodeCoverage" Version="18.12.0" />
-    <PackageVersion Include="ProjectDefaults" Version="1.0.184" />
+    <PackageVersion Include="ProjectDefaults" Version="1.0.187" />
     <PackageVersion Include="Tmds.DBus.Protocol" Version="0.95.2" />
-    <PackageVersion Include="TUnit" Version="1.76.45" />
+    <PackageVersion Include="TUnit" Version="1.78.0" />
   </ItemGroup>
 </Project>
