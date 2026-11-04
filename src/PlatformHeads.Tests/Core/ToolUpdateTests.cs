@@ -34,6 +34,32 @@ public class ToolUpdateTests
     }
 
     /// <summary>
+    /// What the Windows script stops: the shim, and whatever runs from under the store or a folder
+    /// it was told to stop as well, without regard to case and by whole folders, so a package whose
+    /// id only begins with this one's is left alone.
+    /// </summary>
+    [Test]
+    public async Task TheWindowsScriptStopsWhatRunsFromTheStore()
+    {
+        var tools = Path.Combine(Path.GetTempPath(), "home", ".dotnet", "tools");
+        var also = Path.Combine(Path.GetTempPath(), "fixed", "viewer");
+        var shim = Path.Combine(tools, "SampleApp.exe");
+        var update = new ToolUpdate("SampleApp", shim, Path.Combine(tools, "outcome.log"))
+        {
+            AlsoStopUnder = [also]
+        };
+        var head = Path.Combine(tools, ".store", "sampleapp", "1.0.0", "sampleapp.win-x64", "1.0.0", "tools", "net10.0", "win-x64", "Head.exe");
+
+        await Assert.That(update.WindowsScriptStops(head)).IsTrue();
+        await Assert.That(update.WindowsScriptStops(head.ToUpperInvariant())).IsTrue();
+        await Assert.That(update.WindowsScriptStops(shim.ToLowerInvariant())).IsTrue();
+        await Assert.That(update.WindowsScriptStops(Path.Combine(also, "Head.exe"))).IsTrue();
+        await Assert.That(update.WindowsScriptStops(Path.Combine(tools, ".store", "sampleapp.other", "Head.exe"))).IsFalse();
+        await Assert.That(update.WindowsScriptStops(Path.Combine(Path.GetTempPath(), ".nuget", "packages", "sampleapp", "Head.exe"))).IsFalse();
+        await Assert.That(update.WindowsScriptStops(null)).IsFalse();
+    }
+
+    /// <summary>
     /// Which shell this platform starts, and that the script's arguments follow it in order. The
     /// scripts themselves are pinned below, and run by the test after that.
     /// </summary>
