@@ -90,6 +90,15 @@ One back end a platform:
  * macOS: `StatusItem` in the Swift package, which the app's native library drives.
 
 
+## The desktop's own programs
+
+For a head with no toolkit of its own to ask or show something with, in `PlatformHeads.Core`. None of them throws:
+
+ * `DesktopDialog.ForPlatform()` is AppleScript's dialogs on macOS, and zenity's or kdialog's on Linux, KDE's own first on KDE. It is null on Windows, and on a Linux desktop with neither installed. `PickFolder(prompt, start)` asks for a folder and `Confirm(title, message, accept)` asks whether to go ahead. Both wait for the person, so neither is asked on a loop's thread.
+ * `FileManager.TryReveal(file)` shows a file selected in Explorer or the Finder, and opens its folder where it cannot be selected: on Linux, and for a file not written yet. `FileManager.TryOpen(directory)` opens a folder while it is there, and does not make one that is not.
+ * `ProcessRunner.Run` runs a program to the end with its output captured, its arguments as a list, an optional standard input, and a timeout, thirty seconds unless it is given one. `ProcessRunner.OnPath` finds a program on `PATH`.
+
+
 ## Updating
 
 For an app installed as a dotnet tool, in `PlatformHeads.Core`:
