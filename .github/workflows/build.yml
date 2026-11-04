@@ -94,8 +94,9 @@ jobs:
         run: swift test
 
   # The tool update's macOS shell, run: bash with job control on, which is how it escapes the
-  # process group launchd ends with a login item. Only those tests, since the rest pack apps and
-  # build native code this job has no reason to set up.
+  # process group launchd ends with a login item. And the desktop dialogs' AppleScript, compiled
+  # by osacompile, which only macOS has. Only those tests, since the rest pack apps and build
+  # native code this job has no reason to set up.
   macos:
     name: macos
     runs-on: macos-latest
@@ -114,6 +115,9 @@ jobs:
 
       - name: Test the tool update
         run: dotnet test --project src/PlatformHeads.Tests/PlatformHeads.Tests.csproj --configuration Release --no-build -- --treenode-filter "/*/*/ToolUpdate*/*"
+
+      - name: Test the desktop dialogs
+        run: dotnet test --project src/PlatformHeads.Tests/PlatformHeads.Tests.csproj --configuration Release --no-build -- --treenode-filter "/*/*/DesktopDialogTests/*"
 
   # Trusted publishing: no stored API key. nuget.org validates GitHub's OIDC token against the
   # policy naming this repository, this workflow file and the nuget environment, and returns a

@@ -16,13 +16,13 @@ public static class DesktopNotification
     {
         if (OperatingSystem.IsMacOS())
         {
-            ProcessRunner.Run("osascript", ["-e", Script(notification)], timeout);
+            ProcessRunner.Run("osascript", ["-e", Script(notification)], timeout: timeout);
             return;
         }
 
         if (OperatingSystem.IsLinux())
         {
-            ProcessRunner.Run("notify-send", Arguments(appName, notification), timeout);
+            ProcessRunner.Run("notify-send", Arguments(appName, notification), timeout: timeout);
         }
     }
 
