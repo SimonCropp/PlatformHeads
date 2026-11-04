@@ -42,4 +42,61 @@ public sealed record TrayMenuItem(
 
     public override int GetHashCode() =>
         HashCode.Combine(Id, Label, Enabled, Separator, IconName, Checked, Children?.Count ?? 0);
+
+    /// <summary>
+    /// What the item is, as the bits a C ABI carries, submenu aside.
+    /// </summary>
+    public TrayMenuFlags Flags
+    {
+        get
+        {
+            var flags = TrayMenuFlags.None;
+            if (Enabled)
+            {
+                flags |= TrayMenuFlags.Enabled;
+            }
+
+            if (Separator)
+            {
+                flags |= TrayMenuFlags.Separator;
+            }
+
+            if (Checked is { } on)
+            {
+                flags |= TrayMenuFlags.Checkable;
+                if (on)
+                {
+                    flags |= TrayMenuFlags.Checked;
+                }
+            }
+
+            return flags;
+        }
+    }
+
+    /// <summary>
+    /// The menu as one list, each submenu's items after the item that opens it, with the index of
+    /// that item in the same list, or -1 for an item of the menu itself: how a C ABI carries a
+    /// menu, since a struct cannot hold a list of itself. PlatformHeadsMac's
+    /// <c>StatusMenuItem.tree</c> makes it a tree again.
+    /// </summary>
+    public static IReadOnlyList<(TrayMenuItem Item, int Parent)> Flatten(IReadOnlyList<TrayMenuItem> items)
+    {
+        var flat = new List<(TrayMenuItem Item, int Parent)>();
+        Add(items, -1, flat);
+        return flat;
+    }
+
+    static void Add(IReadOnlyList<TrayMenuItem> items, int parent, List<(TrayMenuItem Item, int Parent)> flat)
+    {
+        foreach (var item in items)
+        {
+            var index = flat.Count;
+            flat.Add((item, parent));
+            if (item.HasChildren)
+            {
+                Add(item.Children!, index, flat);
+            }
+        }
+    }
 }

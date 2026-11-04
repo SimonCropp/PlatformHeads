@@ -35,6 +35,8 @@ The `PlatformHeads.WindowsForms` NuGet package, for the Windows head. `HeadForm`
 
 `FormsApp.Configure` is the process wide setup, once, and `FormsClipboard.Set` the clipboard half of `SetClipboard`.
 
+`PaletteMenuRenderer` draws a ToolStrip menu in the app's own `MenuPalette` rather than the system's colours, its items' text included, which is no member of a colour table. Assigned per strip, it beats a renderer set for the whole process, so a menu's pixels do not move with the OS theme.
+
 The head is `net10.0`, not `net10.0-windows`, since it is published per runtime identifier from a platform neutral package, and names WinForms itself with `UseWindowsForms` and the usual workaround for the SDK's check of it. So the package does not declare the WinForms framework reference: declared by a package, the SDK refuses a `net10.0` project that takes it (NETSDK1136).
 
 
@@ -89,6 +91,8 @@ One back end a platform:
  * Linux: `StatusNotifierTray<TIcon>` in `PlatformHeads.Linux`, a StatusNotifierItem with a dbusmenu over D-Bus, in managed code. It shows on KDE, Cinnamon and XFCE, and on GNOME with the AppIndicator extension. With no host on the bus, `Open` says so and returns null.
  * macOS: `StatusItem` in the Swift package, which the app's native library drives.
 
+A menu crosses a C ABI to the macOS back end as one array, since a struct cannot hold a list of itself. `TrayMenuItem.Flatten` makes it, each item with the index of the item whose submenu it is in, and `Flags` is an item as `TrayMenuFlags` bits. The Swift package's `StatusMenuItem.tree` makes it a tree again, reading the bits as `StatusMenuFlags`, which have the same values.
+
 
 ## The desktop's own programs
 
@@ -105,7 +109,8 @@ For an app installed as a dotnet tool, in `PlatformHeads.Core`:
 
  * `ToolUpdate` runs `dotnet tool update` on the app and starts it again. `Start` hands that to a shell and returns, and the app then exits: the shell waits for it to go, updates by the tool path its shim is in, writes how that went, and starts the shim, whether the update worked or not. On Windows it first stops whatever else runs from the store, which would keep the old version from being removed. It uses the dotnet the app runs on, since a login item's PATH may have none.
  * `ToolUpdate.ShimFor(path, command)` is the shim of the tool whose store a path is under, or null for a build's output.
- * `ToolUpdateOutcome.Take(path)` reads and removes what the shell wrote, for the app it started to report.
+ * `ToolUpdate.WindowsScriptStops(image)` says whether the Windows shell stops a process, for an app that has to ask one to close first because stopping it would lose what it holds.
+ * `ToolUpdateOutcome.Take(path)` reads and removes what the shell wrote, for the app it started to report. `ToolUpdateOutcome.Report(path, app, version)` is that report as a `TrayNotification`, or null where no update started the app, with the outcome and any failure to read it handed back for the app's log.
 
 
 ## The CMake module
@@ -156,7 +161,7 @@ targets: [
  * `KnobScroller` follows a drag of its knob as ordinary events rather than in AppKit's own loop, and `ScrollerTravel` counts a scroller in rows, so its travel is the managed side's clamp.
  * `WheelNotches` and `Steps` tell a wheel from a trackpad and keep the fractions, and `ToolTipRegions` registers tips again only when they change, which is what lets their delay elapse.
  * `StringBlob` reads the ABI's string blob bounds checked, `Capture` writes a png at a pinned scale for the pixel snapshots, `Clipboard` sets text, and `WindowPlacement` turns AppKit's frames into the top-left bounds every head reports.
- * `StatusItem` is a tray app's menu bar item: a left click is the icon's, and the menu, built from `StatusMenuItem`s with submenus and checks, is the right button's or a control-click's.
+ * `StatusItem` is a tray app's menu bar item: a left click is the icon's, and the menu, built from `StatusMenuItem`s with submenus and checks, is the right button's or a control-click's. `StatusMenuItem.tree` makes the menu from the flat array an app's C ABI carries, and `StatusMenuItem.describe` writes it as text, for a test with no menu bar.
 
 
 ## The build-native workflow

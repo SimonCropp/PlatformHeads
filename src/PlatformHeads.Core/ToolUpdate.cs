@@ -163,8 +163,7 @@ public sealed class ToolUpdate(string packageId, string shim, string outcome)
         var quotedShim = Quote(shim);
         var under = string.Join(
             " -or ",
-            AlsoStopUnder
-                .Prepend(StoreDirectory)
+            StopUnder
                 .Select(_ => $"$_.Path.StartsWith({Quote($@"{_.TrimEnd('\\')}\")}, 'OrdinalIgnoreCase')"));
         string[] steps =
         [
@@ -179,6 +178,34 @@ public sealed class ToolUpdate(string packageId, string shim, string outcome)
         ];
         return string.Join("; ", steps);
     }
+
+    /// <summary>
+    /// Whether <see cref="WindowsScript" /> stops a process whose image is <paramref name="image" />:
+    /// the shim, or one under the store or a folder of <see cref="AlsoStopUnder" />, by whole
+    /// folders and without regard to case, as PowerShell compares them. For an app that holds
+    /// something a stopped process would lose, and has to ask it to go first: DiffEngineTray asks a
+    /// viewer started from its own folder, which holds a queue in memory, to stage it and close.
+    /// </summary>
+    public bool WindowsScriptStops(string? image)
+    {
+        if (image is null)
+        {
+            return false;
+        }
+
+        if (string.Equals(image, shim, StringComparison.OrdinalIgnoreCase))
+        {
+            return true;
+        }
+
+        // Ended by a separator, so a folder whose name only begins with one of them is not taken
+        // for it. This platform's, so the question can be asked of a test's paths anywhere: on
+        // Windows it is the script's.
+        return StopUnder.Any(_ => image.StartsWith(Path.TrimEndingDirectorySeparator(_) + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase));
+    }
+
+    IEnumerable<string> StopUnder =>
+        AlsoStopUnder.Prepend(StoreDirectory);
 
     static string Quote(string path) =>
         $"'{path.Replace("'", "''")}'";
