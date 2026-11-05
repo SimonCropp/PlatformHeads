@@ -156,7 +156,7 @@ targets: [
 ]
 ```
 
- * `HeadWindow` makes the application and the window when `NSApplication.run` is never called, `EventPump` dispatches AppKit's events and waits out the frame, returning early for input and waiting longer for a window nobody can see, and `TerminateGuard` turns a quit from the Dock or a logout into the app's own.
+ * `HeadWindow` makes the application and the window when `NSApplication.run` is never called, `EventPump` dispatches AppKit's events and waits out the frame, returning early for input and waiting longer for a window nobody can see, and `TerminateGuard` turns a quit from the Dock into the app's own. Given a `sessionEnding`, it calls that at a logout, restart or shutdown and lets the quit through, since a refused one cancels the logout.
  * `NapGuard` keeps App Nap off, which would coalesce the timers a head is driven by.
  * `KnobScroller` follows a drag of its knob as ordinary events rather than in AppKit's own loop, and `ScrollerTravel` counts a scroller in rows, so its travel is the managed side's clamp.
  * `WheelNotches` and `Steps` tell a wheel from a trackpad and keep the fractions, and `ToolTipRegions` registers tips again only when they change, which is what lets their delay elapse.
