@@ -20,15 +20,16 @@ public class DbusMenuLayoutTests
     {
         var layout = DbusMenuLayout.Build(items, Glyph);
 
-        await Assert.That(layout.All.Select(_ => (_.Id, _.ItemId))).IsEquivalentTo(
-        [
-            (1, "open"),
-            (2, null),
-            (3, "pending"),
-            (4, "accept"),
-            (5, "discard"),
-            (6, "startup")
-        ]);
+        await Assert.That(layout.All.Select(_ => (_.Id, _.ItemId)))
+            .IsEquivalentTo<IEnumerable<(int Id, string?)>, (int, string?)>(
+            [
+                (1, "open"),
+                (2, null),
+                (3, "pending"),
+                (4, "accept"),
+                (5, "discard"),
+                (6, "startup")
+            ]);
         await Assert.That(layout.Root.Children.Select(_ => _.Id)).IsEquivalentTo([1, 2, 3, 6]);
         await Assert.That(layout.Find(3)!.Children.Select(_ => _.Id)).IsEquivalentTo([4, 5]);
     }

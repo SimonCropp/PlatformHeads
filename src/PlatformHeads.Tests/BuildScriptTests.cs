@@ -10,7 +10,7 @@ public class BuildScriptTests
     public async Task TheWorkflowCarriesTheScriptWordForWord()
     {
         var carried = WorkflowFile.Block("- name: Build", "BUILD_SCRIPT: |");
-        var script = File.ReadAllLines(Repository.BuildScript).ToList();
+        var script = (await File.ReadAllLinesAsync(Repository.BuildScript)).ToList();
 
         await Assert.That(string.Join('\n', carried)).IsEqualTo(string.Join('\n', script));
     }
