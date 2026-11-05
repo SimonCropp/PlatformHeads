@@ -25,8 +25,9 @@ final class TrayExportsTests: XCTestCase {
     }
 
     func testAnAppliedMenuIsDescribedAsTheTreeItWasHanded() {
-        let strings = ["exit", "Exit", "", "more", "More", "deeper", "Ünïcödé, 日本語", "glyph"]
-            .map { UnsafePointer(strdup($0)!) }
+        // Typed first: given the map's pointer initialiser, Swift took the literals for pointers
+        let texts: [String] = ["exit", "Exit", "", "more", "More", "deeper", "Ünïcödé, 日本語", "glyph"]
+        let strings = texts.map { UnsafePointer(strdup($0)!) }
         defer {
             strings.forEach { free(UnsafeMutablePointer(mutating: $0)) }
         }
