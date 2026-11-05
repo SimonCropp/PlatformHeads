@@ -202,7 +202,31 @@ public class ToolUpdateTests
                 app.Kill();
             }
 
-            Directory.Delete(directory, true);
+            await Delete(directory);
+        }
+    }
+
+    /// <summary>
+    /// The folder deleted, and again a little later while Windows says something in it is in use,
+    /// for up to five seconds: a scanner looking at a file the stand-ins just wrote can hold it as
+    /// the test ends, and that is no reason to fail a test that passed. Held for longer, it is a
+    /// process the test started and did not end, which it should fail.
+    /// </summary>
+    static async Task Delete(string directory)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                Directory.Delete(directory, true);
+                return;
+            }
+            catch (Exception exception)
+                when ((exception is IOException or UnauthorizedAccessException) &&
+                      attempt < 20)
+            {
+                await Task.Delay(250);
+            }
         }
     }
 
@@ -232,8 +256,12 @@ public class ToolUpdateTests
         {
             var dotnet = Path.Combine(directory, "dotnet.cmd");
             File.WriteAllText(dotnet, $"@echo off\r\necho %*> \"{updated}\"\r\necho {said}\r\nexit /b {code}\r\n");
+            // Written under another name and renamed, so started.txt is there only once cmd has
+            // closed it: the test goes on the moment it appears, and Windows will not delete a
+            // file that is still open
             var shim = Path.Combine(tools, "sampleapp.cmd");
-            File.WriteAllText(shim, $"@echo off\r\necho started> \"{started}\"\r\n");
+            var writing = $"{started}.writing";
+            File.WriteAllText(shim, $"@echo off\r\necho started> \"{writing}\"\r\nren \"{writing}\" \"{Path.GetFileName(started)}\"\r\n");
             return (dotnet, shim);
         }
 
