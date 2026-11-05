@@ -1,5 +1,8 @@
 # PlatformHeads
 
+[![Build status](https://github.com/SimonCropp/PlatformHeads/actions/workflows/build.yml/badge.svg?branch=main)](https://github.com/SimonCropp/PlatformHeads/actions/workflows/build.yml) [![NuGet Status](https://img.shields.io/nuget/v/PlatformHeads.svg?label=PlatformHeads)](https://www.nuget.org/packages/PlatformHeads/)
+
+
 The build and packaging half of a .NET app that has one head per platform: a WinForms head on Windows, and a native library behind a C ABI on macOS (Swift and AppKit) and Linux (raylib and Dear ImGui), each started by one shared loop.
 
 [DiffEngine](https://github.com/VerifyTests/DiffEngine)'s viewer and [BuildMonitor](https://github.com/SimonCropp/BuildMonitor) are both built this way, and each had its own copy of everything here. A fix made to one copy did not reach the other, so this is the one copy.
