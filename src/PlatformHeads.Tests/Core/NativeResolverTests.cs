@@ -104,6 +104,22 @@ public class NativeResolverTests
     }
 
     /// <summary>
+    /// PlatformHeads.Mac's P/Invokes name platformheads_tray, which each app links into a library of
+    /// its own name: the same pair again is the same resolver, and that import to another library
+    /// is a second one.
+    /// </summary>
+    [Test]
+    public async Task AnImportResolvedToAnotherLibraryIsAPairOfItsOwn()
+    {
+        var assembly = Loaded();
+        NativeResolver.Register(assembly, "platformheads_tray", "sample_tray");
+
+        await Assert.That(() => NativeResolver.Register(assembly, "platformheads_tray", "sample_tray")).ThrowsNothing();
+        await Assert.That(() => NativeResolver.Register(assembly, "platformheads_tray", "other_tray")).Throws<InvalidOperationException>();
+        await Assert.That(() => NativeResolver.Register(assembly, "sample_tray")).Throws<InvalidOperationException>();
+    }
+
+    /// <summary>
     /// An assembly of its own for each test, since a resolver once set on one stays for the process:
     /// the kernel loaded again, into a context of its own.
     /// </summary>

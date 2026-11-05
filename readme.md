@@ -89,9 +89,9 @@ One back end a platform:
 
  * Windows: `NotifyIconTray<TIcon>` in `PlatformHeads.WindowsForms`, which builds its menu each time it opens. `LeftClickOpensMenu` opens it on either button, and `Handle` is the icon's window, for registering hot keys against.
  * Linux: `StatusNotifierTray<TIcon>` in `PlatformHeads.Linux`, a StatusNotifierItem with a dbusmenu over D-Bus, in managed code. It shows on KDE, Cinnamon and XFCE, and on GNOME with the AppIndicator extension. With no host on the bus, `Open` says so and returns null.
- * macOS: `StatusItem` in the Swift package, which the app's native library drives.
+ * macOS: `StatusItemTray<TIcon>` in `PlatformHeads.Mac`, a status item in the menu bar. The managed side has no AppKit, so it calls a C ABI, `platformheads_tray.h`, which the Swift package's `PlatformHeadsMacTray` target exports from whichever native library of the app's links it (`StatusItemOptions.Library`). Its calls are the main thread's, and AppKit's events have to be pumped there: an app with a window of its own pumps them in its window's library, asking `StatusTray.shared.hasInput` there so a click ends the wait, and an app whose only face is the tray has `StatusItemApp` start an accessory application, with no Dock icon, and pump it, and hear a logout through `StatusItemApp.SessionEnding`.
 
-A menu crosses a C ABI to the macOS back end as one array, since a struct cannot hold a list of itself. `TrayMenuItem.Flatten` makes it, each item with the index of the item whose submenu it is in, and `Flags` is an item as `TrayMenuFlags` bits. The Swift package's `StatusMenuItem.tree` makes it a tree again, reading the bits as `StatusMenuFlags`, which have the same values.
+A menu crosses the C ABI as one array, since a struct cannot hold a list of itself. `TrayMenuItem.Flatten` makes it, each item with the index of the item whose submenu it is in, and `Flags` is an item as `TrayMenuFlags` bits. The Swift package's `StatusMenuItem.tree` makes it a tree again, reading the bits as `StatusMenuFlags`, which have the same values. `StatusItemLibrary.Describe` is what the library made of a menu, as text, for a test with no menu bar.
 
 
 ## The desktop's own programs
@@ -153,6 +153,19 @@ targets: [
     .target(
         name: "MyApp",
         dependencies: [.product(name: "PlatformHeadsMac", package: "PlatformHeads")])
+]
+```
+
+A tray links `PlatformHeadsMacTray` into a library, from a target of its own that needs no more than an import of it, and `PlatformHeads.Mac` is told that library's name:
+
+```swift
+products: [
+    .library(name: "myapp_tray", type: .dynamic, targets: ["MyAppTray"])
+],
+targets: [
+    .target(
+        name: "MyAppTray",
+        dependencies: [.product(name: "PlatformHeadsMacTray", package: "PlatformHeads")])
 ]
 ```
 

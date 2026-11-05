@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <PackageTags>Cross platform, macOS, Tray, Status item, AppKit</PackageTags>
+    <Description>The macOS tray of an app with one head per platform: a status item in the menu bar, drawn by the PlatformHeadsMacTray Swift target the app links into a native library of its own.</Description>
+    <!-- The session end comes back as a function pointer, [UnmanagedCallersOnly], which is unsafe. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ProjectDefaults" PrivateAssets="all" />
+    <ProjectReference Include="..\PlatformHeads.Core\PlatformHeads.Core.csproj" />
+    <Using Include="System.Runtime.InteropServices" />
+    <Using Include="System.Text" />
+  </ItemGroup>
+</Project>
