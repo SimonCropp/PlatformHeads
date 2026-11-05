@@ -26,6 +26,10 @@
     <!-- Builds everywhere, as the heads that reference it do. It only runs on Linux. -->
     <BuildType Solution="Release-NotWindows|*" Project="Release" />
   </Project>
+  <Project Path="PlatformHeads.Mac/PlatformHeads.Mac.csproj">
+    <!-- Builds everywhere, as the heads that reference it do. It only runs on macOS. -->
+    <BuildType Solution="Release-NotWindows|*" Project="Release" />
+  </Project>
   <Project Path="PlatformHeads.WindowsForms/PlatformHeads.WindowsForms.csproj">
     <!-- Builds everywhere, as the heads that reference it do. It only runs on Windows. -->
     <BuildType Solution="Release-NotWindows|*" Project="Release" />

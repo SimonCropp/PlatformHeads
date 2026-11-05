@@ -11,7 +11,7 @@ namespace PlatformHeads;
 public static class NativeResolver
 {
     static readonly Lock gate = new();
-    static readonly Dictionary<Assembly, string> registered = [];
+    static readonly Dictionary<Assembly, (string Imported, string Library)> registered = [];
 
     /// <summary>
     /// Resolves <paramref name="library"/> for the P/Invokes of <paramref name="assembly"/>. Again
@@ -25,27 +25,39 @@ public static class NativeResolver
     /// </summary>
     /// <param name="assembly">The assembly whose P/Invokes name the library.</param>
     /// <param name="library">The name the P/Invokes give, with no prefix or extension.</param>
-    public static void Register(Assembly assembly, string library)
+    public static void Register(Assembly assembly, string library) =>
+        Register(assembly, library, library);
+
+    /// <summary>
+    /// Resolves the P/Invokes of <paramref name="assembly"/> that name <paramref name="imported"/>
+    /// to <paramref name="library"/>, the app's own: for a library of this repository's whose
+    /// exports an app links into one of its libraries, as PlatformHeads.Mac's are, so its
+    /// P/Invokes cannot know the file they are in. Otherwise as <see cref="Register(Assembly, string)" />.
+    /// </summary>
+    /// <param name="assembly">The assembly whose P/Invokes name <paramref name="imported"/>.</param>
+    /// <param name="imported">The name the P/Invokes give.</param>
+    /// <param name="library">The library shipped, with no prefix or extension.</param>
+    public static void Register(Assembly assembly, string imported, string library)
     {
         lock (gate)
         {
             if (registered.TryGetValue(assembly, out var existing))
             {
-                if (existing == library)
+                if (existing == (imported, library))
                 {
                     return;
                 }
 
-                throw new InvalidOperationException($"{assembly.GetName().Name} already resolves {existing}, so it cannot resolve {library} too.");
+                throw new InvalidOperationException($"{assembly.GetName().Name} already resolves {existing.Imported} to {existing.Library}, so it cannot resolve {imported} to {library} too.");
             }
 
             NativeLibrary.SetDllImportResolver(assembly, Resolve);
-            registered.Add(assembly, library);
+            registered.Add(assembly, (imported, library));
         }
 
         nint Resolve(string name, Assembly caller, DllImportSearchPath? searchPath)
         {
-            if (name != library)
+            if (name != imported)
             {
                 return nint.Zero;
             }

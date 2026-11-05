@@ -43,6 +43,15 @@ public final class StatusItem: NSObject {
         return true
     }
 
+    /// Takes the item out of the menu bar, which it otherwise stays in until the process ends.
+    public func stop() {
+        if let item {
+            NSStatusBar.system.removeStatusItem(item)
+        }
+
+        item = nil
+    }
+
     /// Drawn at 18 points, the menu bar's height. A 48 pixel picture is sharp on any display.
     public func setIcon(_ icon: Int32, png: Data) {
         if let image = NSImage(data: png) {
