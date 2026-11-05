@@ -1,3 +1,5 @@
+// ReSharper disable RedundantUnsafeContext
+// ReSharper disable ArrangeModifiersOrder
 namespace PlatformHeads;
 
 /// <summary>
