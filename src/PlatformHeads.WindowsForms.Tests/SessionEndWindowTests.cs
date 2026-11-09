@@ -6,7 +6,7 @@
 /// loop is needed and nothing here awaits between making the window and destroying it.
 /// </para>
 /// </summary>
-public class SessionEndWindowTests
+public partial class SessionEndWindowTests
 {
     [Test]
     public async Task TheSessionEndingIsHeard()
@@ -57,8 +57,10 @@ public class SessionEndWindowTests
         await Assert.That(failed).IsTypeOf<InvalidOperationException>();
     }
 
-    [DllImport("user32.dll")]
-    static extern nint SendMessage(nint window, int message, nint wParam, nint lParam);
+    // By its exported name: unlike DllImport, LibraryImport does not try the A and W suffixes, and
+    // user32 has no plain SendMessage.
+    [LibraryImport("user32.dll", EntryPoint = "SendMessageW")]
+    private static partial nint SendMessage(nint window, int message, nint wParam, nint lParam);
 
     const int queryEndSession = 0x0011;
     const int endSession = 0x0016;

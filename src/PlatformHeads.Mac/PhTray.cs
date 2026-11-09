@@ -8,49 +8,51 @@ namespace PlatformHeads;
 /// into whichever library the app builds from the PlatformHeadsMacTray target, so nothing here can
 /// know the file they are in.
 /// </summary>
-static class PhTray
+static partial class PhTray
 {
     public const string Name = "platformheads_tray";
 
-    [DllImport(Name, EntryPoint = "ph_tray_version")]
-    public static extern int Version();
+    [LibraryImport(Name, EntryPoint = "ph_tray_version")]
+    public static partial int Version();
 
-    [DllImport(Name, EntryPoint = "ph_tray_init")]
-    public static extern int Init();
+    [LibraryImport(Name, EntryPoint = "ph_tray_init")]
+    public static partial int Init();
 
-    [DllImport(Name, EntryPoint = "ph_tray_set_icon")]
-    public static extern void SetIcon(int icon, byte[] png, int length);
+    [LibraryImport(Name, EntryPoint = "ph_tray_set_icon")]
+    public static partial void SetIcon(int icon, byte[] png, int length);
 
-    [DllImport(Name, EntryPoint = "ph_tray_set_menu_icon")]
-    public static extern void SetMenuIcon([MarshalAs(UnmanagedType.LPUTF8Str)] string name, byte[] png, int length);
+    [LibraryImport(Name, EntryPoint = "ph_tray_set_menu_icon", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void SetMenuIcon(string name, byte[] png, int length);
 
-    [DllImport(Name, EntryPoint = "ph_tray_apply")]
-    public static extern void Apply(int icon, [MarshalAs(UnmanagedType.LPUTF8Str)] string tooltip, PhTrayItem[] items, int count);
+    [LibraryImport(Name, EntryPoint = "ph_tray_apply", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void Apply(int icon, string tooltip, PhTrayItem[] items, int count);
 
-    [DllImport(Name, EntryPoint = "ph_tray_poll")]
-    public static extern int Poll(byte[] buffer, int capacity);
+    // [Out], since a generated array is only [In] unless it says otherwise, and the library fills
+    // it: without, the bytes it wrote are not promised to reach the caller.
+    [LibraryImport(Name, EntryPoint = "ph_tray_poll")]
+    public static partial int Poll([Out] byte[] buffer, int capacity);
 
-    [DllImport(Name, EntryPoint = "ph_tray_icon_clicked")]
-    public static extern int IconClicked();
+    [LibraryImport(Name, EntryPoint = "ph_tray_icon_clicked")]
+    public static partial int IconClicked();
 
-    [DllImport(Name, EntryPoint = "ph_tray_describe")]
-    public static extern int Describe(byte[] buffer, int capacity);
+    [LibraryImport(Name, EntryPoint = "ph_tray_describe")]
+    public static partial int Describe([Out] byte[] buffer, int capacity);
 
-    [DllImport(Name, EntryPoint = "ph_tray_shutdown")]
-    public static extern void Shutdown();
+    [LibraryImport(Name, EntryPoint = "ph_tray_shutdown")]
+    public static partial void Shutdown();
 
-    [DllImport(Name, EntryPoint = "ph_tray_app_on_session_end")]
-    public static extern unsafe void AppOnSessionEnd(delegate* unmanaged<void> ended);
+    [LibraryImport(Name, EntryPoint = "ph_tray_app_on_session_end")]
+    public static unsafe partial void AppOnSessionEnd(delegate* unmanaged<void> ended);
 
-    [DllImport(Name, EntryPoint = "ph_tray_app_start")]
-    public static extern void AppStart([MarshalAs(UnmanagedType.LPUTF8Str)] string napReason);
+    [LibraryImport(Name, EntryPoint = "ph_tray_app_start", StringMarshalling = StringMarshalling.Utf8)]
+    public static partial void AppStart(string napReason);
 
-    [DllImport(Name, EntryPoint = "ph_tray_app_pump")]
-    public static extern void AppPump();
+    [LibraryImport(Name, EntryPoint = "ph_tray_app_pump")]
+    public static partial void AppPump();
 
-    [DllImport(Name, EntryPoint = "ph_tray_app_quitting")]
-    public static extern int AppQuitting();
+    [LibraryImport(Name, EntryPoint = "ph_tray_app_quitting")]
+    public static partial int AppQuitting();
 
-    [DllImport(Name, EntryPoint = "ph_tray_app_stop")]
-    public static extern void AppStop();
+    [LibraryImport(Name, EntryPoint = "ph_tray_app_stop")]
+    public static partial void AppStop();
 }
