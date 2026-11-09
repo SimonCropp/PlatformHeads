@@ -15,6 +15,8 @@ namespace PlatformHeads;
 /// <item>It idles on the message queue and the loop's wake together (<see cref="WaitForFrame"/>).</item>
 /// <item>It keeps frames coming while user32 holds the thread in a modal loop of its own
 /// (<see cref="ModalFrame"/>).</item>
+/// <item>Its taskbar button gets its icon even while the loop is not pumping, as at startup
+/// (<see cref="ClassIcon"/>).</item>
 /// </list>
 /// </summary>
 public class HeadForm : Form
@@ -28,6 +30,7 @@ public class HeadForm : Form
     WindowPlacement? settled;
     FormWindowState settledState;
     long lastFrame;
+    readonly ClassIcon classIcon = new();
 
     /// <summary>
     /// A WinForms timer because its ticks are window messages, and a modal loop - the frame's while
@@ -361,6 +364,7 @@ public class HeadForm : Form
         }
 
         base.WndProc(ref message);
+        classIcon.Follow(message);
     }
 
     /// <summary>

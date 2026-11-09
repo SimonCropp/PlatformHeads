@@ -35,6 +35,7 @@ The `PlatformHeads.WindowsForms` NuGet package, for the Windows head. `HeadForm`
  * Closing it is a request the app answers (`TakeCloseRequest`, `CloseForReal`), except at shutdown and End Task, and `SessionEnding` runs before Windows can end the process.
  * `WaitForFrame` is the head's `IHeadWindow.Wait`: it idles on the message queue and the loop's wake together (`MessageWait`), a frame at most while something on it animates, and not at all while input is already waiting.
  * `ModalFrame` keeps frames coming while user32 holds the thread in its own loop, for a move or a resize, or whatever a subclass enters with `EnterModal`.
+ * Its icons are put on its window class too, which the taskbar reads when the window does not answer in time. Explorer waits well under a second for a window's icon, then shows the stock application icon until the button is made again, and a form shown before the loop first pumps does not answer.
 
 `FormsApp.Configure` is the process wide setup, once, and `FormsClipboard.Set` the clipboard half of `SetClipboard`.
 
