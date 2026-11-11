@@ -115,6 +115,7 @@ For an app installed as a dotnet tool, in `PlatformHeads.Core`:
  * `ToolUpdate.ShimFor(path, command)` is the shim of the tool whose store a path is under, or null for a build's output.
  * `ToolUpdate.WindowsScriptStops(image)` says whether the Windows shell stops a process, for an app that has to ask one to close first because stopping it would lose what it holds.
  * `ToolUpdateOutcome.Take(path)` reads and removes what the shell wrote, for the app it started to report. `ToolUpdateOutcome.Report(path, app, version)` is that report as a `TrayNotification`, or null where no update started the app, with the outcome and any failure to read it handed back for the app's log.
+* `RuntimeWatch.Start(exit)` starts the app again once a servicing update has deleted the runtime it started on, which leaves a running process unable to load anything it had not, and holding its single instance lock. Every five seconds it looks at the shared framework folders the app was loaded from, and once one has gone with another version of its major beside it, starts a shell that waits for the app to exit and starts `Environment.ProcessPath`, then calls `exit` on a pool thread. Call it once the app's toolkit is loaded. Null for an app run as `dotnet app.dll`.
 
 
 ## The CMake module
