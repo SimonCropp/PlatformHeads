@@ -219,7 +219,7 @@ public sealed class RuntimeWatch : IDisposable
                     "-ExecutionPolicy",
                     "Unrestricted",
                     "-EncodedCommand",
-                    Convert.ToBase64String(System.Text.Encoding.Unicode.GetBytes(WindowsScript(processId, command)))
+                    Convert.ToBase64String(Encoding.Unicode.GetBytes(WindowsScript(processId, command)))
                 },
                 UseShellExecute = false,
                 CreateNoWindow = true,

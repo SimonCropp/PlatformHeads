@@ -222,7 +222,7 @@ public class ToolUpdateTests
                 return;
             }
             catch (Exception exception)
-                when ((exception is IOException or UnauthorizedAccessException) &&
+                when (exception is IOException or UnauthorizedAccessException &&
                       attempt < 20)
             {
                 await Task.Delay(250);

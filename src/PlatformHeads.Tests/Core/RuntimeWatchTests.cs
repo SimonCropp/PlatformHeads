@@ -228,7 +228,7 @@ public class RuntimeWatchTests
                     return;
                 }
                 catch (Exception exception)
-                    when ((exception is IOException or UnauthorizedAccessException) &&
+                    when (exception is IOException or UnauthorizedAccessException &&
                           attempt < 20)
                 {
                     Thread.Sleep(250);
