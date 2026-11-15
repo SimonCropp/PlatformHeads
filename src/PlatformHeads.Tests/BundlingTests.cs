@@ -26,7 +26,7 @@ public class BundlingTests
         await Assert.That(result.Output).DoesNotContain("PH0001");
 
         // And beside the build output, since the test asked for that.
-        var output = Path.Combine(app.Root, "App", "bin", "Release", "net10.0", "heads");
+        var output = Path.Combine(app.Root, "App", "bin", "Release", "net11.0", "heads");
         await Assert.That(File.Exists(Path.Combine(output, "win-x64", "App.Head.exe"))).IsTrue();
         await Assert.That(File.Exists(Path.Combine(output, "linux-x64", "App.Head"))).IsTrue();
     }

@@ -41,7 +41,7 @@ The `PlatformHeads.WindowsForms` NuGet package, for the Windows head. `HeadForm`
 
 `PaletteMenuRenderer` draws a ToolStrip menu in the app's own `MenuPalette` rather than the system's colours, its items' text included, which is no member of a colour table. Assigned per strip, it beats a renderer set for the whole process, so a menu's pixels do not move with the OS theme.
 
-The head is `net10.0`, not `net10.0-windows`, since it is published per runtime identifier from a platform neutral package, and names WinForms itself with `UseWindowsForms` and the usual workaround for the SDK's check of it. So the package does not declare the WinForms framework reference: declared by a package, the SDK refuses a `net10.0` project that takes it (NETSDK1136).
+The head is `net11.0`, not `net11.0-windows`, since it is published per runtime identifier from a platform neutral package, and names WinForms itself with `UseWindowsForms` and the usual workaround for the SDK's check of it. So the package does not declare the WinForms framework reference: declared by a package, the SDK refuses a `net11.0` project that takes it (NETSDK1136).
 
 
 ## The MSBuild targets
