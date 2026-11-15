@@ -39,7 +39,7 @@
   </Project>
   <Project Path="PlatformHeads.WindowsForms.Tests/PlatformHeads.WindowsForms.Tests.csproj">
     <BuildType Solution="Release-NotWindows|*" Project="Release" />
-    <!-- Targets net10.0-windows and opens real windows, so it neither builds nor runs off Windows. -->
+    <!-- Targets net11.0-windows and opens real windows, so it neither builds nor runs off Windows. -->
     <Build Solution="Release-NotWindows|*" Project="false" />
   </Project>
 </Solution>

@@ -126,7 +126,7 @@ jobs:
           swift build --product platformheads_tray --configuration release
           bin=$(swift build --product platformheads_tray --configuration release --show-bin-path)
           nm -gU "$bin/libplatformheads_tray.dylib" | grep ' _ph_tray_'
-          cp "$bin/libplatformheads_tray.dylib" src/PlatformHeads.Tests/bin/Release/net10.0/
+          cp "$bin/libplatformheads_tray.dylib" src/PlatformHeads.Tests/bin/Release/net11.0/
 
       - name: Test the tray
         run: dotnet test --project src/PlatformHeads.Tests/PlatformHeads.Tests.csproj --configuration Release --no-build -- --treenode-filter "/*/*/StatusItemTrayTests/*"

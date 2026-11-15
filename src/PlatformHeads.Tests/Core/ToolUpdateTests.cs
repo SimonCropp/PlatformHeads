@@ -13,7 +13,7 @@ public class ToolUpdateTests
     public async Task TheShimIsBesideTheStore(string package, string rid)
     {
         var tools = Path.Combine(Path.GetTempPath(), "home", ".dotnet", "tools");
-        var file = Path.Combine(tools, ".store", "sampleapp", "1.0.0", package, "1.0.0", "tools", "net10.0", rid, "SampleApp.dll");
+        var file = Path.Combine(tools, ".store", "sampleapp", "1.0.0", package, "1.0.0", "tools", "net11.0", rid, "SampleApp.dll");
         var expected = Path.Combine(tools, OperatingSystem.IsWindows() ? "SampleApp.exe" : "SampleApp");
 
         await Assert.That(ToolUpdate.ShimFor(file, "SampleApp")).IsEqualTo(expected);
@@ -48,7 +48,7 @@ public class ToolUpdateTests
         {
             AlsoStopUnder = [also]
         };
-        var head = Path.Combine(tools, ".store", "sampleapp", "1.0.0", "sampleapp.win-x64", "1.0.0", "tools", "net10.0", "win-x64", "Head.exe");
+        var head = Path.Combine(tools, ".store", "sampleapp", "1.0.0", "sampleapp.win-x64", "1.0.0", "tools", "net11.0", "win-x64", "Head.exe");
 
         await Assert.That(update.WindowsScriptStops(head)).IsTrue();
         await Assert.That(update.WindowsScriptStops(head.ToUpperInvariant())).IsTrue();

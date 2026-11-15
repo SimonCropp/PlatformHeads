@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <!--
-    net10.0 and not net10.0-windows, as the heads that reference it are: each is published per RID
+    net11.0 and not net11.0-windows, as the heads that reference it are: each is published per RID
     from a platform neutral package, and a platform locked reference would lock it too. So it claims
     the Windows platform only for the check that refuses UseWindowsForms on a platform neutral
     framework, and puts it back, as the heads do.
     -->
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net11.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <NoWarn>$(NoWarn);NETSDK1137;CA1416</NoWarn>
     <!-- So it builds on the Linux runner, which publishes the Windows heads too. -->
@@ -42,8 +42,8 @@
   </ItemGroup>
 
   <!--
-  The WinForms framework reference stays out of the package. A head that takes it is net10.0 and
-  not net10.0-windows, and the SDK refuses such a project once a package brings it that reference
+  The WinForms framework reference stays out of the package. A head that takes it is net11.0 and
+  not net11.0-windows, and the SDK refuses such a project once a package brings it that reference
   (NETSDK1136, from _CheckForTransitiveWindowsDesktopDependencies), though the head names the
   framework itself by UseWindowsForms, as it has to in order to use this at all. Marked here rather
   than with the project's items, because the SDK adds the reference after them.

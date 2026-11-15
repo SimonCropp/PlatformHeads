@@ -16,7 +16,7 @@ dotnet build src --configuration Release
 dotnet test --solution src/PlatformHeads.slnx --configuration Release --no-build --no-restore
 
 # Or run the test project directly, which takes a filter after it
-src/PlatformHeads.Tests/bin/Release/net10.0/PlatformHeads.Tests.exe --treenode-filter "/*/*/ClassName/*"
+src/PlatformHeads.Tests/bin/Release/net11.0/PlatformHeads.Tests.exe --treenode-filter "/*/*/ClassName/*"
 
 # Build the sample head the way the workflow does. Docker Desktop on this machine shares only D:\Code
 docker run --rm -v "$PWD:/src" -w /src -e LIBRARY=sample_ui -e NATIVE=sample/native "quay.io/pypa/manylinux_2_28_$(uname -m)" bash native/build-linux.sh
@@ -30,7 +30,7 @@ The shared half of the head architecture DiffEngineViewer (`D:\Code\VerifyTests\
 
 Layer 2 is the managed kernel, `src/PlatformHeads.Core`, packed as `PlatformHeads.Core`: `SessionHost<TState>`, `ScreenCache<TState, TScreen>`, `IHeadWindow<TScreen, TInput>` and `OpenWindow<TWindow>`, `Pacing` and `LoopWake<TState>`, `ClipboardPump`, `WindowPlacement`, `PlacementSettler` and `NativeResolver`. Each was a copy in both apps, or in BuildMonitor and missing from DiffEngine. The frame loop itself stays in each app, since most of it is the app's own. Unlike the apps' code it is in a namespace, `PlatformHeads`, and public, since it is a library; an app takes it with a global using. It is signed with the `key.snk` most of these repositories share, because DiffEngine is signed. The tests are in `src/PlatformHeads.Tests/Core`.
 
-Layer 3 is the WinForms shell, `src/PlatformHeads.WindowsForms`, packed as `PlatformHeads.WindowsForms`: `HeadForm`, the base of each app's form, with `WindowFit`, `MessageWait`, `FormsApp` and `FormsClipboard`. It is `net10.0` with `UseWindowsForms` and the `TargetPlatformIdentifier` workaround the heads have, built with the WindowsDesktop SDK, and keeps the WinForms framework reference out of its package (`KeepWindowsFormsOutOfThePackage`): declared by a package, the SDK refuses a `net10.0` head that takes it, and moving `TargetPlatformIdentifier` before that check does not help, since MSBuild decides whether to run a target before its `BeforeTargets`. Its tests are `src/PlatformHeads.WindowsForms.Tests`, `net10.0-windows`, which the `Release-NotWindows` configuration leaves out, and which `build.yml` uses off Windows. A wait's length cannot be tested on a thread with windows, since any message for the thread ends it: `MessageWaitTests` waits on a thread of its own.
+Layer 3 is the WinForms shell, `src/PlatformHeads.WindowsForms`, packed as `PlatformHeads.WindowsForms`: `HeadForm`, the base of each app's form, with `WindowFit`, `MessageWait`, `FormsApp` and `FormsClipboard`. It is `net11.0` with `UseWindowsForms` and the `TargetPlatformIdentifier` workaround the heads have, built with the WindowsDesktop SDK, and keeps the WinForms framework reference out of its package (`KeepWindowsFormsOutOfThePackage`): declared by a package, the SDK refuses a `net11.0` head that takes it, and moving `TargetPlatformIdentifier` before that check does not help, since MSBuild decides whether to run a target before its `BeforeTargets`. Its tests are `src/PlatformHeads.WindowsForms.Tests`, `net11.0-windows`, which the `Release-NotWindows` configuration leaves out, and which `build.yml` uses off Windows. A wait's length cannot be tested on a thread with windows, since any message for the thread ends it: `MessageWaitTests` waits on a thread of its own.
 
 Layer 1 is build and packaging, and ships in three forms an app pins at one tag:
 
