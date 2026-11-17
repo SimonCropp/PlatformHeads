@@ -53,6 +53,35 @@ public class FileManagerTests :
         await Assert.That(Directory.Exists(gone)).IsFalse();
     }
 
+    /// <summary>
+    /// A folder is started as its own path through the shell, so it takes the folder's default
+    /// verb and opens in a file manager that replaces Explorer, which explorer.exe by name would not.
+    /// </summary>
+    [Test]
+    public async Task AFolderOnWindowsOpensThroughTheShell()
+    {
+        var start = FileManager.WindowsStart(directory, false);
+
+        await Assert.That(start.FileName).IsEqualTo(directory);
+        await Assert.That(start.Arguments).IsEmpty();
+        await Assert.That(start.UseShellExecute).IsTrue();
+    }
+
+    /// <summary>
+    /// Selecting a file has no shell verb, so that alone is Explorer's.
+    /// </summary>
+    [Test]
+    public async Task AFileOnWindowsIsSelectedByExplorer()
+    {
+        var file = Path.Combine(directory, "sample.verified.txt");
+
+        var start = FileManager.WindowsStart(file, true);
+
+        await Assert.That(start.FileName).IsEqualTo("explorer.exe");
+        await Assert.That(start.Arguments).IsEqualTo($"/select,\"{file}\"");
+        await Assert.That(start.UseShellExecute).IsTrue();
+    }
+
     public FileManagerTests()
     {
         directory = Path.Combine(Path.GetTempPath(), $"FileManagerTests_{Guid.NewGuid():N}");

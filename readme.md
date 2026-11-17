@@ -103,7 +103,7 @@ A menu crosses the C ABI as one array, since a struct cannot hold a list of itse
 For a head with no toolkit of its own to ask or show something with, in `PlatformHeads.Core`. None of them throws:
 
  * `DesktopDialog.ForPlatform()` is AppleScript's dialogs on macOS, and zenity's or kdialog's on Linux, KDE's own first on KDE. It is null on Windows, and on a Linux desktop with neither installed. `PickFolder(prompt, start)` asks for a folder and `Confirm(title, message, accept)` asks whether to go ahead. Both wait for the person, so neither is asked on a loop's thread.
- * `FileManager.TryReveal(file)` shows a file selected in Explorer or the Finder, and opens its folder where it cannot be selected: on Linux, and for a file not written yet. `FileManager.TryOpen(directory)` opens a folder while it is there, and does not make one that is not.
+ * `FileManager.TryReveal(file)` shows a file selected in Explorer or the Finder, and opens its folder where it cannot be selected: on Linux, and for a file not written yet. `FileManager.TryOpen(directory)` opens a folder while it is there, and does not make one that is not. On Windows a folder opens through the shell, by the folder's default verb, so in a file manager that replaces Explorer where one does; selecting a file has no verb, so only that is Explorer's.
  * `ProcessRunner.Run` runs a program to the end with its output captured, its arguments as a list, an optional standard input, and a timeout, thirty seconds unless it is given one. `ProcessRunner.OnPath` finds a program on `PATH`.
 
 
