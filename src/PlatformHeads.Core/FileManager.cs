@@ -1,8 +1,9 @@
 namespace PlatformHeads;
 
 /// <summary>
-/// Shows a file or a folder in the desktop's file manager: Explorer on Windows, the Finder on
-/// macOS, and whatever <c>xdg-open</c> opens a folder with on Linux.
+/// Shows a file or a folder in the desktop's file manager: on Windows whatever opens folders,
+/// Explorer unless another file manager replaces it, though only Explorer selects a file; the
+/// Finder on macOS; and whatever <c>xdg-open</c> opens a folder with on Linux.
 /// <para>
 /// Never thrown: a file manager that will not start, or no file manager at all on a Linux machine,
 /// is nothing an app can do anything about, and thrown from a click it reached the UI thread in
@@ -77,9 +78,31 @@ public static class FileManager
     }
 
     /// <summary>
-    /// Explorer's <c>/select,</c> is one argument with the path quoted after the comma, which is
-    /// not how a list of arguments would quote it. Linux has no file manager that every desktop can
-    /// be asked to select a file in, so it opens the file's folder.
+    /// What Windows is asked to start. A folder is opened through the shell as its own path, so it
+    /// takes the folder's default verb and opens in whatever handles folders: Explorer, or a file
+    /// manager registered in its place, which starting explorer.exe by name would pass over.
+    /// Selecting a file has no verb, so it alone is Explorer's <c>/select,</c>: one argument with
+    /// the path quoted after the comma, which is not how a list of arguments would quote it.
+    /// </summary>
+    public static ProcessStartInfo WindowsStart(string target, bool select)
+    {
+        if (select)
+        {
+            return new("explorer.exe", $"/select,\"{target}\"")
+            {
+                UseShellExecute = true
+            };
+        }
+
+        return new(target)
+        {
+            UseShellExecute = true
+        };
+    }
+
+    /// <summary>
+    /// Linux has no file manager that every desktop can be asked to select a file in, so it opens
+    /// the file's folder.
     /// </summary>
     static bool TryStart(string target, bool select, [NotNullWhen(false)] out Exception? error)
     {
@@ -87,11 +110,7 @@ public static class FileManager
         {
             if (OperatingSystem.IsWindows())
             {
-                using var explorer = Process.Start(
-                    new ProcessStartInfo("explorer.exe", select ? $"/select,\"{target}\"" : $"\"{target}\"")
-                    {
-                        UseShellExecute = true
-                    });
+                using var process = Process.Start(WindowsStart(target, select));
             }
             else
             {
